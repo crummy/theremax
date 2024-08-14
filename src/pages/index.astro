@@ -9,7 +9,7 @@ import Instrument from "../components/Instrument.svelte";
 		<p class="instructions">
 			Touch anywhere to begin
 		</p>
-		<Instrument client:load/>
+		<Instrument client:only="svelte"/>
 		<ul role="list" class="link-card-grid">
 			<Card
 				href="https://docs.astro.build/"
