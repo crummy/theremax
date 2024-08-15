@@ -1,9 +1,26 @@
 <script lang="ts">
-    import {type Instrument, Piano, Player, Theremin} from "./player.ts";
+    import {
+        type Instrument,
+        Synth,
+        Player,
+        Theremin,
+        AMSynth,
+        FMSynth,
+        MembraneSynth,
+        MetalSynth,
+        MonoSynth, PluckSynth, DuoSynth
+    } from "./player.ts";
     import {Visualization} from "./Visualization.ts";
 
     const theremin = new Theremin()
-    const piano = new Piano()
+    const synth = new Synth()
+    const amSynth = new AMSynth()
+    const fmSynth = new FMSynth()
+    const duoSynth = new DuoSynth()
+    const membraneSynth = new MembraneSynth()
+    const metalSynth = new MetalSynth()
+    const monoSynth = new MonoSynth()
+    const pluckSynth = new PluckSynth()
 
     let player: Player
     let isInitialized = false;
@@ -34,6 +51,13 @@
 {#if isInitialized}
     <ul class="instruments">
         <li><button  on:click={() => changeInstrument(theremin)}>Theremin</button></li>
-        <li><button on:click={() => changeInstrument(piano)}>Piano</button></li>
+        <li><button on:click={() => changeInstrument(synth)}>Synth</button></li>
+        <li><button on:click={() => changeInstrument(amSynth)}>AM Synth</button></li>
+        <li><button on:click={() => changeInstrument(fmSynth)}>FM Synth</button></li>
+        <li><button on:click={() => changeInstrument(duoSynth)}>Duo Synth</button></li>
+        <li><button on:click={() => changeInstrument(membraneSynth)}>Membrane Synth</button></li>
+        <li><button on:click={() => changeInstrument(metalSynth)}>Metal Synth</button></li>
+        <li><button on:click={() => changeInstrument(monoSynth)}>Mono Synth</button></li>
+        <li><button on:click={() => changeInstrument(pluckSynth)}>Pluck Synth</button></li>
     </ul>
 {/if}

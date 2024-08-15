@@ -59,7 +59,7 @@ export class Theremin implements Instrument {
     }
 }
 
-export class Piano implements Instrument {
+export class Synth implements Instrument {
     private readonly notes = [
         // "C0", "C#0/Db0", "D0", "D#0/Eb0", "E0", "F0", "F#0/Gb0", "G0", "G#0/Ab0", "A0", "A#0/Bb0", "B0",
         // "C1", "C#1/Db1", "D1", "D#1/Eb1", "E1", "F1", "F#1/Gb1", "G1", "G#1/Ab1", "A1", "A#1/Bb1", "B1",
@@ -82,4 +82,32 @@ export class Piano implements Instrument {
     getIntervals() {
         return this.notes.length;
     }
+}
+
+export class AMSynth extends Synth {
+    private readonly synth = new Tone.AMSynth().toDestination();
+}
+
+export class FMSynth extends Synth {
+    private readonly synth = new Tone.FMSynth().toDestination();
+}
+
+export class DuoSynth extends Synth {
+    private readonly synth = new Tone.DuoSynth().toDestination();
+}
+
+export class MembraneSynth extends Synth {
+    private readonly synth = new Tone.MembraneSynth().toDestination();
+}
+
+export class MetalSynth extends Synth {
+    private readonly synth = new Tone.MetalSynth().toDestination();
+}
+
+export class MonoSynth extends Synth {
+    private readonly synth = new Tone.MonoSynth().toDestination();
+}
+
+export class PluckSynth extends Synth {
+    private readonly synth = new Tone.PluckSynth().toDestination();
 }
