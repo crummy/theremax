@@ -5,6 +5,9 @@ const screenPadding = 16;
 export class Visualization {
     private readonly app = new Application();
     private drawListener: (x: number, y: number) => void = () => null
+    private newClickListener: () => void = () => null
+    private clickStopListener: () => void = () => null
+    private tickListener: (millis: number) => void = () => null
     private columns: Graphics[] = []
 
     async init(element: HTMLElement) {
@@ -26,11 +29,13 @@ export class Visualization {
         this.app.stage.hitArea = this.app.screen
         let isDrawing = false
         this.app.stage.addEventListener('pointerdown', async (event) => {
+            this.newClickListener();
             graphics.beginPath()
             graphics.moveTo(event.globalX, event.globalY)
             isDrawing = true
         })
         this.app.stage.addEventListener('pointerup', (event) => {
+            this.clickStopListener()
             isDrawing = false
             graphics.closePath()
         })
@@ -47,6 +52,7 @@ export class Visualization {
                 const column = this.columns[i];
                 column.alpha *= 0.97;
             }
+            this.tickListener(Date.now())
         });
     }
 
@@ -60,6 +66,18 @@ export class Visualization {
 
     onDraw(callback: (x: number, y: number) => void) {
         this.drawListener = callback
+    }
+
+    onNewClick(callback: () => void) {
+        this.newClickListener = callback
+    }
+
+    onClickStop(callback: () => void) {
+        this.clickStopListener = callback
+    }
+
+    onTick(callback: (millis: number) => void) {
+        this.tickListener = callback
     }
 
     highlight(x: number, columns: number) {

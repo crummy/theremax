@@ -36,6 +36,18 @@
             visualization.highlight(x, player.instrument.getIntervals());
         })
 
+        visualization.onNewClick(() => {
+            player.newRecording()
+        })
+
+        visualization.onClickStop(() => {
+            player.stopRecording()
+        })
+
+        visualization.onTick(() => {
+            const lines = player.tick()
+        })
+
         const theremin = new Theremin()
         await player.init(theremin)
         isInitialized = true
