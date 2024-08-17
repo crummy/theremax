@@ -81,7 +81,7 @@ export class Player {
 }
 
 export interface Instrument {
-    play(x: number, y: number): void;
+    play(x: number, volume: number): void;
 
     getIntervals(): number;
 }
