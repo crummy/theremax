@@ -1,17 +1,19 @@
-import {BinarySearchTree} from "./Tree.ts";
 import {Timer} from "./Timer.ts";
 import type {Instrument} from "./player.ts";
 import * as Tone from "tone";
 
 class Recording {
-    notes: BinarySearchTree<{
-        millis: number,
-        x: number,
-        y: number
-    }> = new BinarySearchTree((a, b) => a.millis - b.millis);
+    notes: { [millis: number]: { x: number, y: number } } = {};
     length: number | undefined = undefined;
+    lastPlayed: { x: number, y: number } | undefined = undefined;
 
     constructor(public id: number, public instrument: Instrument) {
+    }
+
+    addNote(x: number, y: number, millis: number) {
+        const note = {x, y};
+        this.notes[millis] = note;
+        this.lastPlayed = note;
     }
 }
 
@@ -45,12 +47,14 @@ export class Theremax {
         const recording = new Recording(this.recordingId, instrument);
         this.recordings[this.recordingId] = recording;
         this.timer.reset();
-        recording.notes.insert({millis: this.timer.getElapsedMs(), x, y});
+        const millis = this.timer.getElapsedMs();
+        recording.addNote(x, y, millis);
     }
 
     moveDraw(x: number, y: number) {
         const recording = this.recordings[this.recordingId];
-        recording.notes.insert({millis: this.timer.getElapsedMs(), x, y});
+        const millis = this.timer.getElapsedMs();
+        recording.addNote(x, y, millis);
     }
 
     endDraw() {
@@ -64,19 +68,25 @@ export class Theremax {
             return
         }
         const maxRecording = Math.max(...this.recordings.map(r => r.length ?? 0));
-        const isRecording = this.recordings.some(r => r.length === undefined);
-        if (!isRecording && this.timer.getElapsedMs() > maxRecording) {
+        const activeRecording = this.recordings.find(r => r.length === undefined);
+        if (!activeRecording && this.timer.getElapsedMs() > maxRecording) {
             this.timer.reset();
             this.vis.clearLines();
         }
         for (let recording of this.recordings) {
             const now = this.timer.getElapsedMs();
-            const nearest = recording.notes.search({millis: now});
             const stillRecording = recording.length === undefined;
+            let dot: { x: number, y: number } | undefined;
+            if (stillRecording) {
+                dot = recording.lastPlayed
+            } else {
+                const closestNextDot = Object.entries(recording.notes).find(([millis, _]) => Number.parseInt(millis) >= now)
+                dot = closestNextDot?.[1]
+            }
             const stillReplaying = recording.length !== undefined && now < recording.length;
-            if (nearest && (stillRecording || stillReplaying)) {
-                this.playScaled(nearest.data.x, nearest.data.y, recording.instrument);
-                this.vis.drawPoint(nearest.data.x, nearest.data.y, recording.id);
+            if (dot && (stillRecording || stillReplaying)) {
+                this.playScaled(dot.x, dot.y, recording.instrument);
+                this.vis.drawPoint(dot.x, dot.y, recording.id);
             }
         }
     }

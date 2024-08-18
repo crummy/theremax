@@ -7,7 +7,7 @@
         FMSynth,
         MembraneSynth,
         MetalSynth,
-        MonoSynth, PluckSynth, DuoSynth
+        MonoSynth, PluckSynth, DuoSynth, Sampler
     } from "./player.ts";
     import {Visualization} from "./Visualization.ts";
     import {Theremax} from "./Theremax.ts";
@@ -21,6 +21,7 @@
     let metalSynth: MetalSynth
     let monoSynth: MonoSynth
     let pluckSynth: PluckSynth
+    let sampler: Sampler
 
     let instrument: Instrument
     let isInitialized = false;
@@ -37,6 +38,7 @@
         metalSynth = new MetalSynth()
         monoSynth = new MonoSynth()
         pluckSynth = new PluckSynth()
+        sampler = new Sampler()
         instrument = duoSynth
 
         const element: HTMLElement | null = document.querySelector("#pixi");
@@ -104,6 +106,9 @@
         </li>
         <li class:selectedInstrument={instrument === pluckSynth}>
             <button on:click={() => instrument = pluckSynth}>Pluck Synth</button>
+        </li>
+        <li class:selectedInstrument={instrument === sampler}>
+            <button on:click={() => instrument = sampler}>Sampler</button>
         </li>
     </ul>
 {/if}

@@ -1,83 +1,9 @@
 import * as Tone from "tone";
-import {BinarySearchTree} from "./Tree.ts";
-import {Timer} from "./Timer.ts";
 
 function lerp(value: number, sourceRangeMin: number, sourceRangeMax: number, targetRangeMin: number, targetRangeMax: number) {
     const targetRange = targetRangeMax - targetRangeMin;
     const sourceRange = sourceRangeMax - sourceRangeMin;
     return (value - sourceRangeMin) * targetRange / sourceRange + targetRangeMin;
-}
-
-export class Player {
-    instrument: Instrument;
-    private readonly width: number;
-    private readonly height: number;
-    private readonly volume = {min: -40, max: 0}
-    private isToneInitialized = false;
-    private instrumentId = 0;
-    private timer = new Timer();
-    private recordingLengthMs = 0;
-
-    private recordings: { [instrumentId: string]: BinarySearchTree<{ millis: number, x: number, y: number }> } = {}
-
-    constructor(width: number, height: number) {
-        this.width = width;
-        this.height = height;
-    }
-
-    async init(instrument: Instrument) {
-        this.instrument = instrument
-        if (!this.isToneInitialized) {
-            await Tone.start();
-            this.isToneInitialized = true;
-        }
-    }
-
-    setInstrument(instrument: Instrument) {
-        this.instrument = instrument;
-    }
-
-    newRecording() {
-        this.instrumentId++;
-        this.timer.reset();
-    }
-
-    stopRecording() {
-
-    }
-
-    tick() {
-        const now = this.timer.getElapsedMs();
-        return Object.keys(this.recordings)
-            .filter(instrumentId => instrumentId != this.instrumentId.toString())
-            .map(instrumentId => {
-                const recording = this.recordings[instrumentId]
-                const nearest = recording.search({millis: now})
-                if (nearest) {
-                    this.playScaled(nearest.data.x, nearest.data.y)
-                    return { ...nearest.data, instrumentId };
-                }
-            }).filter(a => a)
-    }
-
-    play(x: number, y: number) {
-        this.recordingLengthMs = Math.max(this.recordingLengthMs, this.timer.getElapsedMs());
-        this.playScaled(x, y)
-        const recording = this.recordings[this.instrumentId] ?? new BinarySearchTree<{
-            millis: number,
-            x: number,
-            y: number
-        }>((a, b) => a.millis - b.millis)
-        recording.insert({millis: this.timer.getElapsedMs(), x, y})
-        this.recordings[this.instrumentId] = recording
-    }
-
-    private playScaled(x: number, y: number) {
-        const amount = x / this.width;
-        const vol = lerp(y, 0, this.height, this.volume.min, this.volume.max)
-        this.instrument.play(amount, vol);
-    }
-
 }
 
 export interface Instrument {
@@ -152,4 +78,31 @@ export class MonoSynth extends Synth {
 
 export class PluckSynth extends Synth {
     override readonly synth = new Tone.PluckSynth().toDestination();
+}
+
+export class Sampler extends Synth {
+    override readonly synth = new Tone.Sampler({
+        urls: {
+            A1: "clap-808.wav",
+            A2: "hihat-808.wav",
+            A3: "kick-808.wav",
+            A4: "kick-gritty.wav",
+            A5: "kick-tron.wav",
+            A6: "perc-hollow.wav",
+            A7: "shaker-shuffle.wav",
+            A8: "snare-dist03.wav",
+            A9: "snare-vinyl01.wav",
+        },
+        baseUrl: "Samples/"
+    }).toDestination();
+    override readonly notes = [
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "A5",
+        "A6",
+        "A7",
+        "A8",
+        "A9",]
 }
