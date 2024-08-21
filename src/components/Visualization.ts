@@ -1,7 +1,33 @@
-import {Application, Color, Graphics, Rectangle} from "pixi.js";
+import {Application, Graphics} from "pixi.js";
 import type {TheremaxVisualization} from "./Theremax.ts";
 
 const screenPadding = 16;
+const colours = [
+    0x00ff00,
+    0xff0000,
+    0x0000ff,
+    0xffff00,
+    0xff00ff,
+    0x00ffff,
+    0xff8800,
+    0x00ff88,
+    0x8800ff,
+    0x88ff00,
+    0x0088ff,
+    0xff0088,
+    0x8800ff,
+    0x0088ff,
+    0xff0088,
+    0x88ff00,
+    0x00ff88,
+    0xff8800,
+    0x00ffff,
+    0xff00ff,
+    0xffff00,
+    0x0000ff,
+    0xff0000,
+    0x00ff00,
+]
 
 export class Visualization implements TheremaxVisualization {
     private readonly app = new Application();
@@ -103,7 +129,7 @@ export class Visualization implements TheremaxVisualization {
     }
 
     drawPoint(x: number, y: number, recordingId: number): void {
-        const dot = new Graphics().circle(x, y, 4).fill(0xffd900);
+        const dot = new Graphics().circle(x, y, 4).fill(colours[recordingId % colours.length]);
         this.dots.push(dot)
         this.app.stage.addChild(dot)
     }
