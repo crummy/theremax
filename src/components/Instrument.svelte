@@ -12,35 +12,12 @@
     import {Visualization} from "./Visualization.ts";
     import {Theremax} from "./Theremax.ts";
 
-    let theremin: Theremin
-    let synth: Synth
-    let amSynth: AMSynth
-    let fmSynth: FMSynth
-    let duoSynth: DuoSynth
-    let membraneSynth: MembraneSynth
-    let metalSynth: MetalSynth
-    let monoSynth: MonoSynth
-    let pluckSynth: PluckSynth
-    let sampler: Sampler
+    let instrument = "duoSynth"
 
-    let instrument: Instrument
     let isInitialized = false;
     const visualization = new Visualization();
 
     async function init() {
-        // initialize these late, once users have interacted with page, or we get a bunch of browser warnings
-        theremin = new Theremin()
-        synth = new Synth()
-        amSynth = new AMSynth()
-        fmSynth = new FMSynth()
-        duoSynth = new DuoSynth()
-        membraneSynth = new MembraneSynth()
-        metalSynth = new MetalSynth()
-        monoSynth = new MonoSynth()
-        pluckSynth = new PluckSynth()
-        sampler = new Sampler()
-        instrument = duoSynth
-
         const element: HTMLElement | null = document.querySelector("#pixi");
         if (!element) {
             throw new Error("Element #pixi not found");
@@ -51,11 +28,47 @@
 
         visualization.onDraw((x, y) => {
             theremax.moveDraw(x, y)
-            visualization.highlight(x, instrument.getIntervals());
+            const intervals = theremax.getIntervals()
+            visualization.highlight(x, intervals);
         })
 
         visualization.onNewClick((x, y) => {
-            theremax.beginDraw(x, y, instrument)
+            let inst: Instrument;
+            switch(instrument) {
+                case "theremin":
+                    inst = new Theremin()
+                    break;
+                case "synth":
+                    inst = new Synth()
+                    break;
+                case "amSynth":
+                    inst = new AMSynth()
+                    break;
+                case "fmSynth":
+                    inst = new FMSynth()
+                    break;
+                case "duoSynth":
+                    inst = new DuoSynth()
+                    break;
+                case "membraneSynth":
+                    inst = new MembraneSynth()
+                    break;
+                case "metalSynth":
+                    inst = new MetalSynth()
+                    break;
+                case "monoSynth":
+                    inst = new MonoSynth()
+                    break;
+                case "pluckSynth":
+                    inst = new PluckSynth()
+                    break;
+                case "sampler":
+                    inst = new Sampler()
+                    break;
+                default:
+                    throw new Error("Unknown instrument " + instrument)
+            }
+            theremax.beginDraw(x, y, inst)
         })
 
         visualization.onClickStop(() => {
@@ -80,35 +93,35 @@
 <div id="pixi"></div>
 {#if isInitialized}
     <ul class="instruments">
-        <li class:selectedInstrument={instrument === theremin}>
-            <button on:click={() => instrument = theremin}>Theremin</button>
+        <li class:selectedInstrument={instrument === "theremin"}>
+            <button on:click={() => instrument = "theremin"}>Theremin</button>
         </li>
-        <li class:selectedInstrument={instrument === synth}>
-            <button on:click={() => instrument = synth}>Synth</button>
+        <li class:selectedInstrument={instrument === "synth"}>
+            <button on:click={() => instrument = "synth"}>Synth</button>
         </li>
-        <li class:selectedInstrument={instrument === amSynth}>
-            <button on:click={() => instrument = amSynth}>AM Synth</button>
+        <li class:selectedInstrument={instrument === "amSynth"}>
+            <button on:click={() => instrument = "amSynth"}>AM Synth</button>
         </li>
-        <li class:selectedInstrument={instrument === fmSynth}>
-            <button on:click={() => instrument = fmSynth}>FM Synth</button>
+        <li class:selectedInstrument={instrument === "fmSynth"}>
+            <button on:click={() => instrument = "fmSynth"}>FM Synth</button>
         </li>
-        <li class:selectedInstrument={instrument === duoSynth}>
-            <button on:click={() => instrument = duoSynth}>Duo Synth</button>
+        <li class:selectedInstrument={instrument === "duoSynth"}>
+            <button on:click={() => instrument = "duoSynth"}>Duo Synth</button>
         </li>
-        <li class:selectedInstrument={instrument === membraneSynth}>
-            <button on:click={() => instrument = membraneSynth}>Membrane Synth</button>
+        <li class:selectedInstrument={instrument === "membraneSynth"}>
+            <button on:click={() => instrument = "membraneSynth"}>Membrane Synth</button>
         </li>
-        <li class:selectedInstrument={instrument === metalSynth}>
-            <button on:click={() => instrument = metalSynth}>Metal Synth</button>
+        <li class:selectedInstrument={instrument === "metalSynth"}>
+            <button on:click={() => instrument = "metalSynth"}>Metal Synth</button>
         </li>
-        <li class:selectedInstrument={instrument === monoSynth}>
-            <button on:click={() => instrument = monoSynth}>Mono Synth</button>
+        <li class:selectedInstrument={instrument === "monoSynth"}>
+            <button on:click={() => instrument = "monoSynth"}>Mono Synth</button>
         </li>
-        <li class:selectedInstrument={instrument === pluckSynth}>
-            <button on:click={() => instrument = pluckSynth}>Pluck Synth</button>
+        <li class:selectedInstrument={instrument === "pluckSynth"}>
+            <button on:click={() => instrument = "pluckSynth"}>Pluck Synth</button>
         </li>
-        <li class:selectedInstrument={instrument === sampler}>
-            <button on:click={() => instrument = sampler}>Sampler</button>
+        <li class:selectedInstrument={instrument === "sampler"}>
+            <button on:click={() => instrument = "sampler"}>Sampler</button>
         </li>
     </ul>
 {/if}

@@ -1,4 +1,5 @@
 import * as Tone from "tone";
+import {ToneAudioBuffer} from "tone";
 
 function lerp(value: number, sourceRangeMin: number, sourceRangeMax: number, targetRangeMin: number, targetRangeMax: number) {
     const targetRange = targetRangeMax - targetRangeMin;
@@ -9,17 +10,30 @@ function lerp(value: number, sourceRangeMin: number, sourceRangeMax: number, tar
 export interface Instrument {
     play(x: number, volume: number): void;
 
+    stop(): void;
+
     getIntervals(): number;
 }
 
 export class Theremin implements Instrument {
     private readonly synth = new Tone.Synth().toDestination();
     private readonly frequency = {min: 20, max: 2000}
+    private playingFrequency: number | null = null
 
     play(x: number, volume: number): void {
         this.synth.volume.value = volume
         const freq = lerp(x, 0, 1, this.frequency.max, this.frequency.min)
-        this.synth.triggerAttackRelease(freq, '1n')
+        if (freq == this.playingFrequency) {
+            return
+        } else {
+            this.synth.triggerAttack(freq)
+            this.playingFrequency = freq
+        }
+    }
+
+    stop() {
+        this.synth.triggerRelease()
+        this.playingFrequency = null
     }
 
     getIntervals(): number {
@@ -40,11 +54,23 @@ export class Synth implements Instrument {
         // "C8", "C#8/Db8", "D8", "D#8/Eb8", "E8", "F8", "F#8/Gb8", "G8", "G#8/Ab8", "A8", "A#8/Bb8", "B8"
     ].filter((a, i) => i % 2 === 0)
     private readonly synth = new Tone.Synth().toDestination();
+    private playingNote: string | null = null
 
     play(x: number, volume: number): void {
         this.synth.volume.value = volume
         const noteIndex = Math.floor(lerp(x, 0, 1, 0, this.notes.length))
-        this.synth.triggerAttackRelease(this.notes[noteIndex], '1n')
+        const note = this.notes[noteIndex];
+        if (note == this.playingNote) {
+            return
+        } else {
+            this.synth.triggerAttack(note)
+            this.playingNote = note
+        }
+    }
+
+    stop() {
+        this.synth.triggerRelease();
+        this.playingNote = null;
     }
 
     getIntervals() {
@@ -80,21 +106,22 @@ export class PluckSynth extends Synth {
     override readonly synth = new Tone.PluckSynth().toDestination();
 }
 
+const samples = {
+    urls: {
+        A1: new ToneAudioBuffer("Samples/clap-808.wav"),
+        A2: new ToneAudioBuffer("Samples/hihat-808.wav"),
+        A3: new ToneAudioBuffer("Samples/kick-808.wav"),
+        A4: new ToneAudioBuffer("Samples/kick-gritty.wav"),
+        A5: new ToneAudioBuffer("Samples/kick-tron.wav"),
+        A6: new ToneAudioBuffer("Samples/perc-hollow.wav"),
+        A7: new ToneAudioBuffer("Samples/shaker-shuffle.wav"),
+        A8: new ToneAudioBuffer("Samples/snare-dist03.wav"),
+        A9: new ToneAudioBuffer("Samples/snare-vinyl01.wav"),
+    }
+};
+
 export class Sampler extends Synth {
-    override readonly synth = new Tone.Sampler({
-        urls: {
-            A1: "clap-808.wav",
-            A2: "hihat-808.wav",
-            A3: "kick-808.wav",
-            A4: "kick-gritty.wav",
-            A5: "kick-tron.wav",
-            A6: "perc-hollow.wav",
-            A7: "shaker-shuffle.wav",
-            A8: "snare-dist03.wav",
-            A9: "snare-vinyl01.wav",
-        },
-        baseUrl: "Samples/"
-    }).toDestination();
+    override readonly synth = new Tone.Sampler(samples).toDestination();
     override readonly notes = [
         "A1",
         "A2",
@@ -104,5 +131,6 @@ export class Sampler extends Synth {
         "A6",
         "A7",
         "A8",
-        "A9",]
+        "A9"
+    ]
 }

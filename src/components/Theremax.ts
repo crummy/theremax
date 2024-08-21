@@ -59,6 +59,10 @@ export class Theremax {
         recording.addNote(x, y, millis);
     }
 
+    getIntervals() {
+        return this.recordings[this.recordingId]?.instrument.getIntervals()
+    }
+
     endDraw() {
         const recording = this.recordings[this.recordingId];
         recording.length = this.timer.getElapsedMs();
@@ -91,6 +95,8 @@ export class Theremax {
             if (dot && (stillRecording || stillReplaying)) {
                 this.playScaled(dot.x, dot.y, recording.instrument);
                 this.vis.drawPoint(dot.x, dot.y, recording.id);
+            } else {
+                recording.instrument.stop()
             }
         }
     }
