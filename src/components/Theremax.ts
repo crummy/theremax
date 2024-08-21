@@ -46,7 +46,9 @@ export class Theremax {
     beginDraw(x: number, y: number, instrument: Instrument) {
         const recording = new Recording(this.recordingId, instrument);
         this.recordings[this.recordingId] = recording;
-        this.timer.reset();
+        if (this.recordingId == 0) {
+            this.timer.reset();
+        }
         const millis = this.timer.getElapsedMs();
         recording.addNote(x, y, millis);
     }
@@ -80,7 +82,9 @@ export class Theremax {
             if (stillRecording) {
                 dot = recording.lastPlayed
             } else {
-                const closestNextDot = Object.entries(recording.notes).find(([millis, _]) => Number.parseInt(millis) >= now)
+                const closestNextDot = Object.entries(recording.notes)
+                    .filter(([millis, _]) => Math.abs(Number.parseInt(millis) - now) < 16) // so we don't show ones in the future
+                    .find(([millis, _]) => Number.parseInt(millis) >= now)
                 dot = closestNextDot?.[1]
             }
             const stillReplaying = recording.length !== undefined && now < recording.length;
