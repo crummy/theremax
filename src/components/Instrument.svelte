@@ -11,8 +11,13 @@
 
     let isInitialized = false;
     const visualization = new Visualization();
+    const theremax = new Theremax(visualization)
 
     let soundFonts: string[] = getSoundfontNames();
+
+    function reset() {
+        theremax.reset();
+    }
 
     async function init() {
         const element: HTMLElement | null = document.querySelector("#pixi");
@@ -20,8 +25,7 @@
             throw new Error("Element #pixi not found");
         }
         await visualization.init(element);
-
-        const theremax = new Theremax(visualization)
+        await theremax.init();
 
         visualization.onDraw((x, y) => {
             theremax.moveDraw(x, y)
@@ -61,7 +65,11 @@
     }
 </style>
 
-<button on:click={init}>Play</button>
+{#if isInitialized}
+    <button on:click={reset}>Reset</button>
+    {:else}
+    <button on:click={init}>Play</button>
+{/if}
 <div id="pixi"></div>
 {#if isInitialized}
     <ul class="instruments">

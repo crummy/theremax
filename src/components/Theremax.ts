@@ -52,7 +52,18 @@ export class Theremax {
     readonly context = new AudioContext();
 
     constructor(private vis: TheremaxVisualization) {
-        this.context.resume().then(() => this.isInitialized = true)
+    }
+
+    async init() {
+        await this.context.resume()
+        this.isInitialized = true
+    }
+
+    reset() {
+        this.timer.reset();
+        this.recordingId = 0;
+        this.recordings = [];
+        this.vis.clearLines();
     }
 
     beginDraw(x: number, y: number, instrument: Instrument) {
