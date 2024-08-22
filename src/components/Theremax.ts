@@ -1,6 +1,5 @@
 import {Timer} from "./Timer.ts";
 import type {Instrument} from "./player.ts";
-import * as Tone from "tone";
 
 interface Instant {
     millis: number
@@ -50,9 +49,10 @@ export class Theremax {
     private isInitialized = false;
     private readonly volume = {min: -40, max: 0}
     private readonly loopTimeMs = 10 * 1000;
+    readonly context = new AudioContext();
 
     constructor(private vis: TheremaxVisualization) {
-        Tone.start().then(() => this.isInitialized = true);
+        this.context.resume().then(() => this.isInitialized = true)
     }
 
     beginDraw(x: number, y: number, instrument: Instrument) {

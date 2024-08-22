@@ -1,5 +1,6 @@
-import * as Tone from "tone";
-import {ToneAudioBuffer} from "tone";
+import {Soundfont, SplendidGrandPiano as Piano, CacheStorage} from "smplr";
+
+const storage = new CacheStorage();
 
 function lerp(value: number, sourceRangeMin: number, sourceRangeMax: number, targetRangeMin: number, targetRangeMax: number) {
     const targetRange = targetRangeMax - targetRangeMin;
@@ -15,61 +16,48 @@ export interface Instrument {
     getIntervals(): number;
 }
 
-export class Theremin implements Instrument {
-    private readonly synth = new Tone.Synth().toDestination();
-    private readonly frequency = {min: 20, max: 2000}
-    private playingFrequency: number | null = null
-
-    play(x: number, volume: number): void {
-        this.synth.volume.value = volume
-        const freq = lerp(x, 0, 1, this.frequency.max, this.frequency.min)
-        if (freq == this.playingFrequency) {
-            return
-        } else {
-            this.synth.triggerAttack(freq)
-            this.playingFrequency = freq
-        }
-    }
-
-    stop() {
-        this.synth.triggerRelease()
-        this.playingFrequency = null
-    }
-
-    getIntervals(): number {
-        return this.frequency.max - this.frequency.min
-    }
-}
-
-export class Synth implements Instrument {
+export class SplendidGrandPiano implements Instrument {
     private readonly notes = [
-        // "C0", "C#0/Db0", "D0", "D#0/Eb0", "E0", "F0", "F#0/Gb0", "G0", "G#0/Ab0", "A0", "A#0/Bb0", "B0",
-        // "C1", "C#1/Db1", "D1", "D#1/Eb1", "E1", "F1", "F#1/Gb1", "G1", "G#1/Ab1", "A1", "A#1/Bb1", "B1",
-        // "C2", "C#2/Db2", "D2", "D#2/Eb2", "E2", "F2", "F#2/Gb2", "G2", "G#2/Ab2", "A2", "A#2/Bb2", "B2",
-        "C3", "C#3/Db3", "D3", "D#3/Eb3", "E3", "F3", "F#3/Gb3", "G3", "G#3/Ab3", "A3", "A#3/Bb3", "B3",
-        "C4", "C#4/Db4", "D4", "D#4/Eb4", "E4", "F4", "F#4/Gb4", "G4", "G#4/Ab4", "A4", "A#4/Bb4", "B4",
-        "C5", "C#5/Db5", "D5", "D#5/Eb5", "E5", "F5", "F#5/Gb5", "G5", "G#5/Ab5", "A5", "A#5/Bb5", "B5",
-        "C6", "C#6/Db6", "D6", "D#6/Eb6", "E6", "F6", "F#6/Gb6", "G6", "G#6/Ab6", "A6", "A#6/Bb6", "B6",
-        // "C7", "C#7/Db7", "D7", "D#7/Eb7", "E7", "F7", "F#7/Gb7", "G7", "G#7/Ab7", "A7", "A#7/Bb7", "B7",
-        // "C8", "C#8/Db8", "D8", "D#8/Eb8", "E8", "F8", "F#8/Gb8", "G8", "G#8/Ab8", "A8", "A#8/Bb8", "B8"
-    ].filter((a, i) => i % 2 === 0)
-    private readonly synth = new Tone.Synth().toDestination();
+
+        "Mp-11", "Mp-15", "Mp-17", "Mp-19", "Mp-21", "Mp-23", "Mp-25", "Mp-26", "Mp-28", "Mp-29",
+        "Mp-31", "Mp-33", "Mp-35", "Mp-36", "Mp-38", "Mp-40", "Mp-41", "Mp-43", "Mp-44", "Mp-45",
+        "Mp-46", "Mp-47", "Mp-48", "Mp-50", "Mp-52", "Mp-53", "Mp-55", "Mp-57", "Mp-59", "Mp-60",
+        "Mp-62", "Mp-64", "Mp-65", "Mp-67", "Mp-68", "Mp-69", "Mp-70", "Mp-71", "Mp-73", "Mp-74",
+        "Mp-75", "Mp-76", "Mp-77", "Mp-78", "Mp-79", "Mp-80", "Mp-81", "Mp-82", "Mp-83", "Mp-84",
+        "Mp-85", "Mp-86", "Mp-87", "Mp-89", "Mp-90", "Mp-91", "Mp-92", "Mp-93", "Mp-94",
+        "pp-11", "pp-15", "pp-17", "pp-19", "pp-21", "pp-23", "pp-25", "pp-26", "pp-28", "pp-29",
+        "pp-31", "pp-33", "pp-35", "pp-36", "pp-38", "pp-40", "pp-41", "pp-43", "pp-44", "pp-45",
+        "pp-46", "pp-47", "pp-48", "pp-50", "pp-52", "pp-53", "pp-55", "pp-57", "pp-59", "pp-60",
+        "pp-62", "pp-64", "pp-65", "pp-67", "pp-68", "pp-69", "pp-70", "pp-71", "pp-73", "pp-74",
+        "pp-75", "pp-77", "pp-78", "pp-79", "pp-80", "pp-81", "pp-82", "pp-83", "pp-84", "pp-85",
+        "pp-86", "pp-87", "pp-88", "pp-89", "pp-90", "pp-91", "pp-92", "pp-93", "pp-94", "pp-95",
+        "pp-96",
+        "FF-11", "FF-15", "FF-17", "FF-19", "FF-21", "FF-23", "FF-25", "FF-26", "FF-28", "FF-29",
+        "FF-31", "FF-33", "FF-35", "FF-36", "FF-38", "FF-40", "FF-41", "FF-43", "FF-44",
+    ]
+    private readonly piano: Piano
     private playingNote: string | null = null
+    private isLoaded = false
+
+    constructor(context: AudioContext) {
+        this.piano = new Piano(context, {storage})
+        this.piano.load.then(() => this.isLoaded = true)
+    }
 
     play(x: number, volume: number): void {
-        this.synth.volume.value = volume
+        this.piano.output.setVolume(volume)
         const noteIndex = Math.floor(lerp(x, 0, 1, 0, this.notes.length))
         const note = this.notes[noteIndex];
         if (note == this.playingNote) {
             return
         } else {
-            this.synth.triggerAttack(note)
+            this.piano.start({note})
             this.playingNote = note
         }
     }
 
     stop() {
-        this.synth.triggerRelease();
+        this.piano.stop()
         this.playingNote = null;
     }
 
@@ -78,59 +66,40 @@ export class Synth implements Instrument {
     }
 }
 
-export class AMSynth extends Synth {
-    override readonly synth = new Tone.AMSynth().toDestination();
-}
-
-export class FMSynth extends Synth {
-    override readonly synth = new Tone.FMSynth().toDestination();
-}
-
-export class DuoSynth extends Synth {
-    override readonly synth = new Tone.DuoSynth().toDestination();
-}
-
-export class MembraneSynth extends Synth {
-    override readonly synth = new Tone.MembraneSynth().toDestination();
-}
-
-export class MetalSynth extends Synth {
-    override readonly synth = new Tone.MetalSynth().toDestination();
-}
-
-export class MonoSynth extends Synth {
-    override readonly synth = new Tone.MonoSynth().toDestination();
-}
-
-export class PluckSynth extends Synth {
-    override readonly synth = new Tone.PluckSynth().toDestination();
-}
-
-const samples = {
-    urls: {
-        A1: new ToneAudioBuffer("Samples/clap-808.wav"),
-        A2: new ToneAudioBuffer("Samples/hihat-808.wav"),
-        A3: new ToneAudioBuffer("Samples/kick-808.wav"),
-        A4: new ToneAudioBuffer("Samples/kick-gritty.wav"),
-        A5: new ToneAudioBuffer("Samples/kick-tron.wav"),
-        A6: new ToneAudioBuffer("Samples/perc-hollow.wav"),
-        A7: new ToneAudioBuffer("Samples/shaker-shuffle.wav"),
-        A8: new ToneAudioBuffer("Samples/snare-dist03.wav"),
-        A9: new ToneAudioBuffer("Samples/snare-vinyl01.wav"),
-    }
-};
-
-export class Sampler extends Synth {
-    override readonly synth = new Tone.Sampler(samples).toDestination();
-    override readonly notes = [
-        "A1",
-        "A2",
-        "A3",
-        "A4",
-        "A5",
-        "A6",
-        "A7",
-        "A8",
-        "A9"
+export class SoundFont implements Instrument {
+    private readonly notes = [
+        "C3", "D3", "E3", "F3", "G3", "A3", "B3",
+        "C4", "D4", "E4", "F4", "G4", "A4", "B4",
+        "C5", "D5", "E5", "F5", "G5", "A5", "B5",
+        "C6", "D6", "E6", "F6", "G6", "A6", "B6",
+        "C7", "D7", "E7", "F7", "G7", "A7", "B7",
+        "C8", "D8", "E8", "F8", "G8", "A8", "B8",
     ]
+    private readonly marimba: Soundfont
+    private playingNote: string | null = null
+
+    constructor(context: AudioContext, instrument: string) {
+        this.marimba = new Soundfont(context, {instrument});
+    }
+
+    play(x: number, volume: number): void {
+        this.marimba.output.setVolume(volume)
+        const noteIndex = Math.floor(lerp(x, 0, 1, 0, this.notes.length))
+        const note = this.notes[noteIndex];
+        if (note == this.playingNote) {
+            return
+        } else {
+            this.marimba.start({note, loop: false})
+            this.playingNote = note
+        }
+    }
+
+    stop() {
+        this.marimba.stop()
+        this.playingNote = null;
+    }
+
+    getIntervals() {
+        return this.notes.length;
+    }
 }

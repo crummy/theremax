@@ -1,21 +1,18 @@
 <script lang="ts">
     import {
-        type Instrument,
-        Synth,
-        Theremin,
-        AMSynth,
-        FMSynth,
-        MembraneSynth,
-        MetalSynth,
-        MonoSynth, PluckSynth, DuoSynth, Sampler
+        type Instrument, SoundFont,
+        SplendidGrandPiano
     } from "./player.ts";
     import {Visualization} from "./Visualization.ts";
     import {Theremax} from "./Theremax.ts";
+    import {getSoundfontNames} from "smplr";
 
-    let instrument = "duoSynth"
+    let instrument = "SplendidGrandPiano"
 
     let isInitialized = false;
     const visualization = new Visualization();
+
+    let soundFonts: string[] = getSoundfontNames();
 
     async function init() {
         const element: HTMLElement | null = document.querySelector("#pixi");
@@ -34,39 +31,13 @@
 
         visualization.onNewClick((x, y) => {
             let inst: Instrument;
-            switch(instrument) {
-                case "theremin":
-                    inst = new Theremin()
-                    break;
-                case "synth":
-                    inst = new Synth()
-                    break;
-                case "amSynth":
-                    inst = new AMSynth()
-                    break;
-                case "fmSynth":
-                    inst = new FMSynth()
-                    break;
-                case "duoSynth":
-                    inst = new DuoSynth()
-                    break;
-                case "membraneSynth":
-                    inst = new MembraneSynth()
-                    break;
-                case "metalSynth":
-                    inst = new MetalSynth()
-                    break;
-                case "monoSynth":
-                    inst = new MonoSynth()
-                    break;
-                case "pluckSynth":
-                    inst = new PluckSynth()
-                    break;
-                case "sampler":
-                    inst = new Sampler()
+            switch (instrument) {
+                case "SplendidGrandPiano":
+                    inst = new SplendidGrandPiano(theremax.context)
                     break;
                 default:
-                    throw new Error("Unknown instrument " + instrument)
+                    inst = new SoundFont(theremax.context, instrument)
+                    break;
             }
             theremax.beginDraw(x, y, inst)
         })
@@ -94,35 +65,13 @@
 <div id="pixi"></div>
 {#if isInitialized}
     <ul class="instruments">
-        <li class:selectedInstrument={instrument === "theremin"}>
-            <button on:click={() => instrument = "theremin"}>Theremin</button>
+        <li class:selectedInstrument={instrument === "SplendidGrandPiano"}>
+            <button on:click={() => instrument = "SplendidGrandPiano"}>Grand Piano</button>
         </li>
-        <li class:selectedInstrument={instrument === "synth"}>
-            <button on:click={() => instrument = "synth"}>Synth</button>
-        </li>
-        <li class:selectedInstrument={instrument === "amSynth"}>
-            <button on:click={() => instrument = "amSynth"}>AM Synth</button>
-        </li>
-        <li class:selectedInstrument={instrument === "fmSynth"}>
-            <button on:click={() => instrument = "fmSynth"}>FM Synth</button>
-        </li>
-        <li class:selectedInstrument={instrument === "duoSynth"}>
-            <button on:click={() => instrument = "duoSynth"}>Duo Synth</button>
-        </li>
-        <li class:selectedInstrument={instrument === "membraneSynth"}>
-            <button on:click={() => instrument = "membraneSynth"}>Membrane Synth</button>
-        </li>
-        <li class:selectedInstrument={instrument === "metalSynth"}>
-            <button on:click={() => instrument = "metalSynth"}>Metal Synth</button>
-        </li>
-        <li class:selectedInstrument={instrument === "monoSynth"}>
-            <button on:click={() => instrument = "monoSynth"}>Mono Synth</button>
-        </li>
-        <li class:selectedInstrument={instrument === "pluckSynth"}>
-            <button on:click={() => instrument = "pluckSynth"}>Pluck Synth</button>
-        </li>
-        <li class:selectedInstrument={instrument === "sampler"}>
-            <button on:click={() => instrument = "sampler"}>Sampler</button>
-        </li>
+        {#each soundFonts as font}
+            <li class:selectedInstrument={instrument === font}>
+                <button on:click={() => instrument = font}>{font}</button>
+            </li>
+        {/each}
     </ul>
 {/if}
