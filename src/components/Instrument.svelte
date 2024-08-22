@@ -77,6 +77,7 @@
 
         visualization.onTick(() => {
             theremax.tick()
+            visualization.updateProgress(theremax.getPercentComplete())
         })
 
         isInitialized = true

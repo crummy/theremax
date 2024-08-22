@@ -37,6 +37,8 @@ export class Visualization implements TheremaxVisualization {
     private tickListener: (millis: number) => void = () => null
     private columns: Graphics[] = []
     private dots: Graphics[] = []
+    private progress = new Graphics();
+
 
     async init(element: HTMLElement) {
         await this.app.init()
@@ -44,14 +46,7 @@ export class Visualization implements TheremaxVisualization {
         // can then insert into the DOM
         element.appendChild(this.app.canvas);
 
-        const graphics = new Graphics();
-
-        graphics.moveTo(screenPadding, screenPadding);
-        graphics.lineTo(screenPadding, this.app.renderer.height - screenPadding);
-        graphics.lineTo(this.app.renderer.width - screenPadding, this.app.renderer.height - screenPadding);
-        graphics.stroke({width: 4, color: 0xffd900});
-
-        this.app.stage.addChild(graphics);
+        this.app.stage.addChild(this.progress)
 
         this.app.stage.eventMode = 'static'
         this.app.stage.hitArea = this.app.screen
@@ -136,5 +131,19 @@ export class Visualization implements TheremaxVisualization {
 
     getDimensions(): { width: number; height: number } {
         return {width: this.app.renderer.width, height: this.app.renderer.height}
+    }
+
+    updateProgress(percent: number) {
+        this.progress.destroy();
+        this.progress = new Graphics();
+        // draw line from bottom left to top left, scaled by percent
+        this.progress.moveTo(screenPadding, this.app.renderer.height - screenPadding)
+        this.progress.lineTo(screenPadding, this.app.renderer.height - screenPadding - percent * (this.app.renderer.height - 2 * screenPadding))
+        // draw line from bottom left to bottom right, scaled by percent
+        this.progress.moveTo(screenPadding, this.app.renderer.height - screenPadding)
+        this.progress.lineTo(screenPadding + percent * (this.app.renderer.width - 2 * screenPadding), this.app.renderer.height - screenPadding)
+        this.progress.stroke({width: 4, color: 0xffd900});
+
+        this.app.stage.addChild(this.progress);
     }
 }

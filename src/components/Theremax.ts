@@ -49,6 +49,7 @@ export class Theremax {
     private timer = new Timer();
     private isInitialized = false;
     private readonly volume = {min: -40, max: 0}
+    private readonly loopTimeMs = 10 * 1000;
 
     constructor(private vis: TheremaxVisualization) {
         Tone.start().then(() => this.isInitialized = true);
@@ -72,18 +73,20 @@ export class Theremax {
         return this.recordings[this.recordingId]?.instrument.getIntervals()
     }
 
+    getPercentComplete() {
+        return this.timer.getElapsedMs() / this.loopTimeMs;
+    }
+
     endDraw() {
         this.recordings[this.recordingId].activelyRecording = false;
         this.recordingId++;
     }
 
     tick() {
-        if (this.recordings.length === 0 || !this.isInitialized) {
+        if (!this.isInitialized) {
             return
         }
-        const allRecordingsFinished = this.recordings.every(r => !r.activelyRecording);
-        const allPlaybackFinished = this.recordings.every(r => r.lastPlayed === r.end);
-        if (allRecordingsFinished && allPlaybackFinished) {
+        if (this.timer.getElapsedMs() > this.loopTimeMs) {
             this.timer.reset();
             this.vis.clearLines();
             for (let recording of this.recordings) {
@@ -105,6 +108,9 @@ export class Theremax {
                 this.vis.drawPoint(x, y, recording.id);
                 recording.lastPlayed = recording.lastPlayed.next;
             }
+            if (recording.end.millis < now && !recording.activelyRecording) {
+                recording.instrument.stop()
+            }
         }
     }
 
@@ -112,6 +118,11 @@ export class Theremax {
         const {width, height} = this.vis.getDimensions();
         const note = x / width;
         const vol = lerp(y, 0, height, this.volume.min, this.volume.max)
-        instrument.play(note, vol);
+        try {
+            instrument.play(note, vol);
+        } catch (e) {
+            // can't figure out "Start time must be strictly greater than previous start time" error, just ignore it
+            console.error(e)
+        }
     }
 }
