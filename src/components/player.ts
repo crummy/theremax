@@ -72,14 +72,15 @@ export class SoundFont implements Instrument {
         "C4", "D4", "E4", "F4", "G4", "A4", "B4",
         "C5", "D5", "E5", "F5", "G5", "A5", "B5",
         "C6", "D6", "E6", "F6", "G6", "A6", "B6",
-        "C7", "D7", "E7", "F7", "G7", "A7", "B7",
-        "C8", "D8", "E8", "F8", "G8", "A8", "B8",
+        // "C7", "D7", "E7", "F7", "G7", "A7", "B7",
+        // "C8", "D8", "E8", "F8", "G8", "A8", "B8",
     ]
     private readonly marimba: Soundfont
     private playingNote: string | null = null
+    private stopLastNote: () => void = () => null
 
     constructor(context: AudioContext, instrument: string) {
-        this.marimba = new Soundfont(context, {instrument});
+        this.marimba = new Soundfont(context, {instrument, loadLoopData: true});
     }
 
     play(x: number, volume: number): void {
@@ -89,7 +90,8 @@ export class SoundFont implements Instrument {
         if (note == this.playingNote) {
             return
         } else {
-            this.marimba.start({note, loop: false})
+            this.stopLastNote()
+            this.stopLastNote = this.marimba.start({note, loop: true})
             this.playingNote = note
         }
     }
