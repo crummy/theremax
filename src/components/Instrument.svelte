@@ -63,23 +63,59 @@
     .selectedInstrument > button {
         font-weight: bold;
     }
+
+    #controls {
+        display: flex;
+        width: 100%;
+        padding: 1em;
+        height: 3em;
+    }
+
+    #controls ul {
+        list-style: none;
+        display: flex;
+        overflow-x: scroll;
+        margin: 0;
+    }
+
+    #instrument {
+        display: flex;
+        flex-direction: column;
+        height: 100dvh;
+    }
+
+    #pixi {
+        flex-grow: 1;
+    }
+
+    :global(body) {
+        padding: 0;
+        margin: 0;
+        width: 100dvw;
+        height: 100dvh;
+        overflow: hidden;
+    }
 </style>
 
-{#if isInitialized}
-    <button on:click={reset}>Reset</button>
-    {:else}
-    <button on:click={init}>Play</button>
-{/if}
-<div id="pixi"></div>
-{#if isInitialized}
-    <ul class="instruments">
-        <li class:selectedInstrument={instrument === "SplendidGrandPiano"}>
-            <button on:click={() => instrument = "SplendidGrandPiano"}>Grand Piano</button>
-        </li>
-        {#each soundFonts as font}
-            <li class:selectedInstrument={instrument === font}>
-                <button on:click={() => instrument = font}>{font}</button>
-            </li>
-        {/each}
-    </ul>
-{/if}
+<div id="instrument">
+    <div id="controls">
+        {#if isInitialized}
+            <button on:click={reset}>Reset</button>
+        {:else}
+            <button on:click={init}>Play</button>
+        {/if}
+        {#if isInitialized}
+            <ul class="instruments">
+                <li class:selectedInstrument={instrument === "SplendidGrandPiano"}>
+                    <button on:click={() => instrument = "SplendidGrandPiano"}>Grand Piano</button>
+                </li>
+                {#each soundFonts as font}
+                    <li class:selectedInstrument={instrument === font}>
+                        <button on:click={() => instrument = font}>{font}</button>
+                    </li>
+                {/each}
+            </ul>
+        {/if}
+    </div>
+    <div id="pixi"></div>
+</div>

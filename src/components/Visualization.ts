@@ -41,7 +41,7 @@ export class Visualization implements TheremaxVisualization {
 
 
     async init(element: HTMLElement) {
-        await this.app.init()
+        await this.app.init({ width: element.clientWidth, height: element.clientHeight})
         // The application will create a canvas element for you that you
         // can then insert into the DOM
         element.appendChild(this.app.canvas);
