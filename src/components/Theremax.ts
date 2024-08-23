@@ -62,6 +62,7 @@ export class Theremax {
     reset() {
         this.timer.reset();
         this.recordingId = 0;
+        this.recordings.forEach(r => r.instrument.stop())
         this.recordings = [];
         this.vis.clearLines();
     }
