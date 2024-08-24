@@ -27,13 +27,13 @@
         await visualization.init(element);
         await theremax.init();
 
-        visualization.onDraw((x, y) => {
-            theremax.moveDraw(x, y)
+        visualization.onDraw((x, y, pointerId) => {
+            theremax.moveDraw(x, y, pointerId)
             const intervals = theremax.getIntervals()
             visualization.highlight(x, intervals);
         })
 
-        visualization.onNewClick((x, y) => {
+        visualization.onNewClick((x, y, pointerId) => {
             let inst: Instrument;
             switch (instrument) {
                 case "SplendidGrandPiano":
@@ -43,11 +43,11 @@
                     inst = new SoundFont(theremax.context, instrument)
                     break;
             }
-            theremax.beginDraw(x, y, inst)
+            theremax.beginDraw(x, y, pointerId, inst)
         })
 
-        visualization.onClickStop(() => {
-            theremax.endDraw()
+        visualization.onClickStop((pointerId) => {
+            theremax.endDraw(pointerId)
         })
 
         visualization.onTick(() => {

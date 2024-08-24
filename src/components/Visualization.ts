@@ -31,9 +31,9 @@ const colours = [
 
 export class Visualization implements TheremaxVisualization {
     private readonly app = new Application();
-    private drawListener: (x: number, y: number) => void = () => null
-    private newClickListener: (x: number, y: number) => void = () => null
-    private clickStopListener: () => void = () => null
+    private drawListener: (x: number, y: number, pointerId: number) => void = () => null
+    private newClickListener: (x: number, y: number, pointerId: number) => void = () => null
+    private clickStopListener: (pointerId: number) => void = () => null
     private tickListener: (millis: number) => void = () => null
     private columns: Graphics[] = []
     private dots: Graphics[] = []
@@ -52,16 +52,16 @@ export class Visualization implements TheremaxVisualization {
         this.app.stage.hitArea = this.app.screen
         let isDrawing = false
         this.app.stage.addEventListener('pointerdown', async (event) => {
-            this.newClickListener(event.globalX, event.globalY);
+            this.newClickListener(event.globalX, event.globalY, event.pointerId);
             isDrawing = true
         })
         this.app.stage.addEventListener('pointerup', (event) => {
-            this.clickStopListener()
+            this.clickStopListener(event.pointerId)
             isDrawing = false
         })
         this.app.stage.addEventListener('pointermove', (event) => {
             if (isDrawing) {
-                this.drawListener(event.globalX, event.globalY);
+                this.drawListener(event.globalX, event.globalY, event.pointerId);
             }
         })
 
@@ -82,15 +82,15 @@ export class Visualization implements TheremaxVisualization {
         return this.app.renderer.height;
     }
 
-    onDraw(callback: (x: number, y: number) => void) {
+    onDraw(callback: (x: number, y: number, pointerId: number) => void) {
         this.drawListener = callback
     }
 
-    onNewClick(callback: (x: number, y: number) => void) {
+    onNewClick(callback: (x: number, y: number, pointerId: number) => void) {
         this.newClickListener = callback
     }
 
-    onClickStop(callback: () => void) {
+    onClickStop(callback: (pointerId: number) => void) {
         this.clickStopListener = callback
     }
 

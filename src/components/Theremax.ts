@@ -9,14 +9,17 @@ interface Instant {
 }
 
 
+let recordingIdCount = 0;
+
 class Recording {
     start: Instant
     lastPlayed: Instant | undefined
     end: Instant
     activelyRecording = true
+    id = recordingIdCount++
 
-    constructor(public id: number, public instrument: Instrument, x: number, y: number, millis: number) {
-        this.start = { millis, x, y, next: undefined }
+    constructor(public instrument: Instrument, x: number, y: number, millis: number, public pointerId: number) {
+        this.start = {millis, x, y, next: undefined}
         this.end = this.start
     }
 
@@ -33,7 +36,6 @@ function lerp(value: number, sourceRangeMin: number, sourceRangeMax: number, tar
     return (value - sourceRangeMin) * targetRange / sourceRange + targetRangeMin;
 }
 
-
 export interface TheremaxVisualization {
     clearLines(): void
 
@@ -43,7 +45,6 @@ export interface TheremaxVisualization {
 }
 
 export class Theremax {
-    private recordingId = 0;
     private recordings: Recording[] = []
     private timer = new Timer();
     private isInitialized = false;
@@ -61,37 +62,46 @@ export class Theremax {
 
     reset() {
         this.timer.reset();
-        this.recordingId = 0;
         this.recordings.forEach(r => r.instrument.stop())
         this.recordings = [];
         this.vis.clearLines();
     }
 
-    beginDraw(x: number, y: number, instrument: Instrument) {
-        if (this.recordingId == 0) {
+    beginDraw(x: number, y: number, pointerId: number, instrument: Instrument) {
+        if (this.recordings.length == 0) {
+            // so we get the full track length
             this.timer.reset();
         }
         const millis = this.timer.getElapsedMs();
-        this.recordings[this.recordingId] = new Recording(this.recordingId, instrument, x, y, millis);
+        const recording = new Recording(instrument, x, y, millis, pointerId);
+        this.recordings.push(recording);
     }
 
-    moveDraw(x: number, y: number) {
-        const recording = this.recordings[this.recordingId];
+    moveDraw(x: number, y: number, pointerId: number) {
+        const recording = this.recordings.find(r => r.pointerId === pointerId && r.activelyRecording)
+        if (!recording) {
+            throw new Error(`No active recording found for pointerId ${pointerId}`)
+        }
         const millis = this.timer.getElapsedMs();
         recording.addNote(x, y, millis);
     }
 
     getIntervals() {
-        return this.recordings[this.recordingId]?.instrument.getIntervals()
+        // now that we have multitouch support, in theory you might be able to have multiple instruments per finger,
+        // so this isn't guaranteed accurate (if somehow each finger has a different instrument)
+        return this.recordings.find(r => r.activelyRecording)?.instrument.getIntervals()
     }
 
     getPercentComplete() {
         return this.timer.getElapsedMs() / this.loopTimeMs;
     }
 
-    endDraw() {
-        this.recordings[this.recordingId].activelyRecording = false;
-        this.recordingId++;
+    endDraw(pointerId: number) {
+        const recording = this.recordings.find(r => r.pointerId === pointerId && r.activelyRecording);
+        if (!recording) {
+            throw new Error(`No recording found to stop with pointerId ${pointerId}`)
+        }
+        recording.activelyRecording = false;
     }
 
     tick() {
@@ -109,13 +119,13 @@ export class Theremax {
         const now = this.timer.getElapsedMs();
         for (let recording of this.recordings) {
             if (recording.lastPlayed === undefined && recording.start.millis <= now) {
-                const { x, y } = recording.start
+                const {x, y} = recording.start
                 this.playScaled(x, y, recording.instrument);
                 this.vis.drawPoint(x, y, recording.id);
                 recording.lastPlayed = recording.start
             }
             while (recording.lastPlayed?.next !== undefined && recording.lastPlayed.millis < now) {
-                const { x, y } = recording.lastPlayed
+                const {x, y} = recording.lastPlayed
                 this.playScaled(x, y, recording.instrument);
                 this.vis.drawPoint(x, y, recording.id);
                 recording.lastPlayed = recording.lastPlayed.next;
