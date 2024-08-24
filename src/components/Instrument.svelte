@@ -1,19 +1,34 @@
 <script lang="ts">
-    import {
-        type Instrument, SoundFont,
-        SplendidGrandPiano
-    } from "./player.ts";
+    import {SoundFont} from "./player.ts";
     import {Visualization} from "./Visualization.ts";
     import {Theremax} from "./Theremax.ts";
-    import {getSoundfontNames} from "smplr";
-
-    let instrument = "SplendidGrandPiano"
 
     let isInitialized = false;
     const visualization = new Visualization();
     const theremax = new Theremax(visualization)
 
-    let soundFonts: string[] = getSoundfontNames();
+    let soundFonts: string[] = [
+        "acoustic_grand_piano",
+        "alto_sax",
+        "bird_tweet",
+        "breath_noise",
+        "cello",
+        "church_organ",
+        "electric_bass_pick",
+        "flute",
+        "fx_3_crystal",
+        "fx_4_atmosphere",
+        "melodic_tom",
+        "music_box",
+        "seashore",
+        "taiko_drum",
+        "tinkle_bell",
+        "viola",
+        "trombone",
+        "xylophone",
+        "voice_oohs",
+    ]
+    let instrument = soundFonts[Math.floor(Math.random() * soundFonts.length)];
 
     function reset() {
         theremax.reset();
@@ -30,19 +45,13 @@
         visualization.onDraw((x, y, pointerId) => {
             theremax.moveDraw(x, y, pointerId)
             const intervals = theremax.getIntervals()
-            visualization.highlight(x, intervals);
+            if (intervals) {
+                visualization.highlightColumn(x, intervals);
+            }
         })
 
         visualization.onNewClick((x, y, pointerId) => {
-            let inst: Instrument;
-            switch (instrument) {
-                case "SplendidGrandPiano":
-                    inst = new SplendidGrandPiano(theremax.context)
-                    break;
-                default:
-                    inst = new SoundFont(theremax.context, instrument)
-                    break;
-            }
+            const inst = new SoundFont(theremax.getContext(), instrument)
             theremax.beginDraw(x, y, pointerId, inst)
         })
 
@@ -106,9 +115,6 @@
         {/if}
         {#if isInitialized}
             <ul class="instruments">
-                <li class:selectedInstrument={instrument === "SplendidGrandPiano"}>
-                    <button on:click={() => instrument = "SplendidGrandPiano"}>Grand Piano</button>
-                </li>
                 {#each soundFonts as font}
                     <li class:selectedInstrument={instrument === font}>
                         <button on:click={() => instrument = font}>{font}</button>

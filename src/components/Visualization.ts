@@ -36,12 +36,12 @@ export class Visualization implements TheremaxVisualization {
     private clickStopListener: (pointerId: number) => void = () => null
     private tickListener: (millis: number) => void = () => null
     private columns: Graphics[] = []
-    private dots: Graphics[] = []
+    private lines: Graphics[] = []
     private progress = new Graphics();
 
 
     async init(element: HTMLElement) {
-        await this.app.init({ width: element.clientWidth, height: element.clientHeight})
+        await this.app.init({width: element.clientWidth, height: element.clientHeight})
         // The application will create a canvas element for you that you
         // can then insert into the DOM
         element.appendChild(this.app.canvas);
@@ -98,7 +98,7 @@ export class Visualization implements TheremaxVisualization {
         this.tickListener = callback
     }
 
-    highlight(x: number, columns: number) {
+    highlightColumn(x: number, columns: number) {
         if (columns !== this.columns.length) {
             this.columns.forEach(c => c.destroy())
             this.app.stage.removeChild(...this.columns)
@@ -116,17 +116,27 @@ export class Visualization implements TheremaxVisualization {
     }
 
     clearLines(): void {
-        for (let dot of this.dots) {
+        for (let dot of this.lines) {
             dot.destroy()
         }
-        this.app.stage.removeChild(...this.dots)
-        this.dots = []
+        this.app.stage.removeChild(...this.lines)
+        this.lines = []
     }
 
-    drawPoint(x: number, y: number, recordingId: number): void {
-        const dot = new Graphics().circle(x, y, 4).fill(colours[recordingId % colours.length]);
-        this.dots.push(dot)
-        this.app.stage.addChild(dot)
+    createLine(x: number, y: number, recordingId: number): void {
+        const graphics = new Graphics()
+        graphics.moveTo(x, y)
+        this.lines[recordingId] = graphics
+        this.app.stage.addChild(graphics)
+    }
+
+    connectPoints(points: { x: number, y: number }[], recordingId: number) {
+        const graphics = this.lines[recordingId]
+        for (let i = 0; i < points.length; i++) {
+            const {x, y} = points[i]
+            graphics.lineTo(x, y)
+        }
+        graphics.stroke({width: 4, color: colours[recordingId % colours.length]});
     }
 
     getDimensions(): { width: number; height: number } {

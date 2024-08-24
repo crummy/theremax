@@ -1,5 +1,6 @@
 import {Timer} from "./Timer.ts";
 import type {Instrument} from "./player.ts";
+import {getContext} from "svelte";
 
 interface Instant {
     millis: number
@@ -39,24 +40,34 @@ function lerp(value: number, sourceRangeMin: number, sourceRangeMax: number, tar
 export interface TheremaxVisualization {
     clearLines(): void
 
-    drawPoint(x: number, y: number, recordingId: number): void
+    createLine(x: number, y: number, recordingId: number): void
 
     getDimensions(): { width: number, height: number }
+
+    connectPoints(points: { x: number, y: number}[], recordingId: number): void
 }
 
 export class Theremax {
     private recordings: Recording[] = []
     private timer = new Timer();
     private isInitialized = false;
-    private readonly volume = {min: -40, max: 0}
+    private readonly volume = {min: -30, max: 100}
     private readonly loopTimeMs = 10 * 1000;
-    readonly context = new AudioContext();
+    private context: AudioContext | undefined
 
     constructor(private vis: TheremaxVisualization) {
     }
 
+    getContext() {
+        if (!this.context) {
+            this.context  = new AudioContext();
+        }
+        return this.context
+    }
+
+
     async init() {
-        await this.context.resume()
+        await this.getContext().resume()
         this.isInitialized = true
     }
 
@@ -75,6 +86,7 @@ export class Theremax {
         const millis = this.timer.getElapsedMs();
         const recording = new Recording(instrument, x, y, millis, pointerId);
         this.recordings.push(recording);
+        this.vis.createLine(x, y, recording.id)
     }
 
     moveDraw(x: number, y: number, pointerId: number) {
@@ -108,30 +120,35 @@ export class Theremax {
         if (!this.isInitialized) {
             return
         }
-        if (this.timer.getElapsedMs() > this.loopTimeMs) {
+        const now = this.timer.getElapsedMs();
+        if (now > this.loopTimeMs) {
             this.timer.reset();
             this.vis.clearLines();
             for (let recording of this.recordings) {
                 recording.lastPlayed = undefined;
                 recording.instrument.stop()
+                this.vis.createLine(recording.start.x, recording.start.y, recording.id)
             }
+            return
         }
-        const now = this.timer.getElapsedMs();
         for (let recording of this.recordings) {
+            let noteToPlay: { x: number, y: number } | undefined = undefined
+            let pointsToDraw: { x: number, y: number }[] = []
             if (recording.lastPlayed === undefined && recording.start.millis <= now) {
-                const {x, y} = recording.start
-                this.playScaled(x, y, recording.instrument);
-                this.vis.drawPoint(x, y, recording.id);
+                noteToPlay = recording.start
+                pointsToDraw.push(recording.start)
                 recording.lastPlayed = recording.start
             }
             while (recording.lastPlayed?.next !== undefined && recording.lastPlayed.millis < now) {
-                const {x, y} = recording.lastPlayed
-                this.playScaled(x, y, recording.instrument);
-                this.vis.drawPoint(x, y, recording.id);
+                noteToPlay = recording.lastPlayed
+                pointsToDraw.push(recording.lastPlayed)
                 recording.lastPlayed = recording.lastPlayed.next;
             }
+            this.vis.connectPoints(pointsToDraw, recording.id);
             if (recording.end.millis < now && !recording.activelyRecording) {
                 recording.instrument.stop()
+            } else if (noteToPlay !== undefined) {
+                this.playScaled(noteToPlay.x, noteToPlay.y, recording.instrument);
             }
         }
     }
