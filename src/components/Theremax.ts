@@ -1,6 +1,6 @@
 import {Timer} from "./Timer.ts";
 import type {Instrument} from "./player.ts";
-import {getContext} from "svelte";
+import {lerp} from "./lerp.ts";
 
 interface Instant {
     millis: number
@@ -29,12 +29,6 @@ class Recording {
         this.end.next = end
         this.end = end
     }
-}
-
-function lerp(value: number, sourceRangeMin: number, sourceRangeMax: number, targetRangeMin: number, targetRangeMax: number) {
-    const targetRange = targetRangeMax - targetRangeMin;
-    const sourceRange = sourceRangeMax - sourceRangeMin;
-    return (value - sourceRangeMin) * targetRange / sourceRange + targetRangeMin;
 }
 
 export interface TheremaxVisualization {

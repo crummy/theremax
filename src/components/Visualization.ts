@@ -1,5 +1,6 @@
 import {Application, Graphics} from "pixi.js";
 import type {TheremaxVisualization} from "./Theremax.ts";
+import {lerp} from "./lerp.ts";
 
 const screenPadding = 16;
 const colours = [
@@ -38,6 +39,7 @@ export class Visualization implements TheremaxVisualization {
     private columns: Graphics[] = []
     private lines: Graphics[] = []
     private progress = new Graphics();
+    private ripples = new Ripples()
 
 
     async init(element: HTMLElement) {
@@ -71,7 +73,10 @@ export class Visualization implements TheremaxVisualization {
                 column.alpha *= 0.97;
             }
             this.tickListener(Date.now())
+            this.ripples.tick()
         });
+
+        this.app.stage.addChild(this.ripples.graphics)
     }
 
     getWidth() {
@@ -136,6 +141,11 @@ export class Visualization implements TheremaxVisualization {
             const {x, y} = points[i]
             graphics.lineTo(x, y)
         }
+        if (points.length > 0) {
+            const last = points[points.length - 1]
+            this.ripples.addRipple(last.x, last.y)
+        }
+
         graphics.stroke({width: 4, color: colours[recordingId % colours.length]});
     }
 
@@ -152,5 +162,58 @@ export class Visualization implements TheremaxVisualization {
         this.progress.stroke({width: 4, color: 0xffd900});
 
         this.app.stage.addChild(this.progress);
+    }
+}
+
+class Ripples {
+    private readonly maxRipples = 32
+    private readonly maxAgeMs = 300
+    readonly graphics = new Graphics()
+    readonly ripples: {  x: number, y: number, creation: number, graphics: Graphics }[] = []
+
+    addRipple(x: number, y: number) {
+        while (this.ripples.length >= this.maxRipples) {
+            const stale = this.ripples.shift()
+            if (!stale) {
+                throw new Error("Impossible")
+            }
+            this.graphics.removeChild(stale.graphics)
+        }
+        const creation = Date.now()
+        const radius = this.radius(creation);
+        const alpha = this.fade(creation)
+        const graphics = new Graphics().circle(x, y, radius).fill({ r: 1, g: 255, b: 3, a: alpha})
+        this.ripples.push({ x, y, creation, graphics})
+        this.graphics.addChild(graphics)
+    }
+
+    tick() {
+        const now = Date.now()
+        while (this.ripples.length > 0 && this.ripples[0].creation + this.maxAgeMs < now) {
+            // assuming ripples is sorted...
+            const stale = this.ripples.shift()
+            if (!stale) {
+                throw new Error("Impossible")
+            }
+            this.graphics.removeChild(stale.graphics)
+        }
+        for (const ripple of this.ripples) {
+            const { x, y, creation } = ripple
+            const radius = this.radius(creation);
+            const alpha = this.fade(creation)
+            ripple.graphics.clear().circle(x, y, radius).stroke({ r: 255, g: 255, b: 3, a: alpha})
+        }
+    }
+
+    fade(creation: number) {
+        const age = Date.now() - creation
+        if (age === 0) {
+            return 1;
+        }
+        return lerp(age, 0, this.maxAgeMs, 1, 0)
+    }
+
+    radius(creation: number) {
+        return (Date.now() - creation)
     }
 }
