@@ -44,14 +44,11 @@
 
         visualization.onDraw((x, y, pointerId) => {
             theremax.moveDraw(x, y, pointerId)
-            const intervals = theremax.getIntervals()
-            if (intervals) {
-                visualization.highlightColumn(x, intervals);
-            }
         })
 
         visualization.onNewClick((x, y, pointerId) => {
             const inst = new SoundFont(theremax.getContext(), instrument)
+            visualization.updateColumnCount(inst.getIntervals())
             theremax.beginDraw(x, y, pointerId, inst)
         })
 
