@@ -146,9 +146,6 @@ export class Visualization implements TheremaxVisualization {
     updateProgress(percent: number) {
         this.progress.destroy();
         this.progress = new Graphics();
-        // draw line from bottom left to top left, scaled by percent
-        this.progress.moveTo(screenPadding, this.app.renderer.height - screenPadding)
-        this.progress.lineTo(screenPadding, this.app.renderer.height - screenPadding - percent * (this.app.renderer.height - 2 * screenPadding))
         // draw line from bottom left to bottom right, scaled by percent
         this.progress.moveTo(screenPadding, this.app.renderer.height - screenPadding)
         this.progress.lineTo(screenPadding + percent * (this.app.renderer.width - 2 * screenPadding), this.app.renderer.height - screenPadding)

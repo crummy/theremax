@@ -1,15 +1,18 @@
 export class Timer {
-    private start: number;
+    private startTime: number | undefined;
 
-    constructor() {
-        this.start = Date.now()
+    start() {
+        this.startTime = Date.now()
     }
 
     getElapsedMs() {
-        return Date.now() - this.start;
+        if (!this.startTime) {
+            return 0;
+        }
+        return Date.now() - this.startTime;
     }
 
     reset() {
-        this.start = Date.now();
+        this.startTime = Date.now();
     }
 }

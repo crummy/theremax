@@ -104,6 +104,12 @@
         height: 100dvh;
         overflow: hidden;
     }
+
+    /* disable zoom on mobile */
+    :global(:root) {
+        touch-action: pan-x pan-y;
+        height: 100%
+    }
 </style>
 
 <div id="instrument">

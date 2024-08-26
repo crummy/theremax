@@ -80,8 +80,7 @@ export class Theremax {
 
     beginDraw(x: number, y: number, pointerId: number, instrument: Instrument) {
         if (this.recordings.length == 0) {
-            // so we get the full track length
-            this.timer.reset();
+            this.timer.start()
         }
         const millis = this.timer.getElapsedMs();
         const recording = new Recording(instrument, x, y, millis, pointerId);
