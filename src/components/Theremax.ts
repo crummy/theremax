@@ -173,7 +173,7 @@ export class Theremax {
 	private playScaled(x: number, y: number, instrument: Instrument) {
 		const { width, height } = this.vis.getDimensions();
 		const note = x / width;
-		const vol = lerp(y, 0, height, this.volume.min, this.volume.max);
+		const vol = lerp(y, 0, height, this.volume.max, this.volume.min);
 		try {
 			instrument.play(note, vol);
 		} catch (e) {
