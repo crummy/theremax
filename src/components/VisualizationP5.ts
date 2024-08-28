@@ -123,11 +123,51 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
         newClickListener(p.mouseX, p.mouseY, 0)
     }
 
+    p.touchStarted = (event) => {
+        // todo: should we go fullscreen?
+        if (!isInitialized) {
+            isInitialized = true
+            return
+        }
+        if (didClick(resetButton)) {
+            resetListener()
+            return
+        }
+        for (let instrument of instruments) {
+            if (didClick(instrument)) {
+                selectInstrumentListener(instrument.name)
+                selectedInstrument = instrument.name
+                return
+            }
+        }
+        if (event instanceof TouchEvent) {
+            for (let touch of event.changedTouches) {
+                newClickListener(touch.clientX, touch.clientY, touch.identifier)
+            }
+        }
+    }
+
+    p.touchEnded = (event) => {
+        if (event instanceof TouchEvent) {
+            for (let touch of event.changedTouches) {
+                clickStopListener(touch.identifier)
+            }
+        }
+    }
+
     p.mouseReleased = () => {
+        clickStopListener(0)
+    }
+
+    p.touchMoved = (event) => {
         if (!isInitialized) {
             return
         }
-        clickStopListener(0)
+        if (event instanceof TouchEvent) {
+            for (let touch of event.changedTouches) {
+                drawListener(touch.clientX, touch.clientY, touch.identifier)
+            }
+        }
     }
 
     p.mouseDragged = () => {
@@ -207,4 +247,8 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
         updateColumnCount,
         updateProgress
     }
+}
+
+class Ripples {
+
 }
