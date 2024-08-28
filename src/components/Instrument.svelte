@@ -23,13 +23,13 @@
             theremax?.moveDraw(x, y, pointerId)
         })
 
-        visualization.onNewClick(async (x, y, pointerId) => {
+        visualization.onNewClick(async (x, y, pointerId, instrumentName) => {
             if (!isInitialized) {
                 theremax = new Theremax(visualization)
                 await theremax.init();
                 isInitialized = true
             }
-            const inst = new SoundFont(theremax.getContext(), instrument)
+            const inst = new SoundFont(theremax.getContext(), instrumentName)
             visualization.updateColumnCount(inst.getIntervals())
             const {recordingId} = theremax.beginDraw(x, y, pointerId, inst)
             visualization.createLine(x, y, recordingId)
@@ -40,8 +40,6 @@
         })
 
         visualization.onReset(reset)
-
-        visualization.onSelectInstrument(inst => instrument = inst)
 
         visualization.onTick(() => {
             if (!isInitialized) {
@@ -54,8 +52,6 @@
             visualization.updateProgress(theremax.getPercentComplete())
         })
     })
-
-    let instrument = soundFonts[Math.floor(Math.random() * soundFonts.length)];
 
     function reset() {
         theremax?.reset();

@@ -34,23 +34,23 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 
     let isInitialized = false
     let drawListener: (x: number, y: number, pointerId: number) => void = () => null
-    let newClickListener: (x: number, y: number, pointerId: number) => void = () => null
+    let newClickListener: (x: number, y: number, pointerId: number, instrumentName: string) => void = () => null
     let clickStopListener: (pointerId: number) => void = () => null
     let tickListener: () => void = () => null
     let resetListener: () => void = () => null
-    let selectInstrumentListener: (instrument: string) => void = () => null
     let progress = 0
     let resetIcon: p5.Image
+    let instrumentIcons: Map<string, p5.Image>
     const resetButton = {x: screenPadding, y: screenPadding, width: 64, height: 64}
     const instruments = soundFonts.map((sf, i) => ({
         x: screenPadding,
-        y: screenPadding + 64 + 32 * (i),
-        width: 32,
-        height: 32,
-        icon: "🎹",
-        name: sf
+        y: screenPadding + 82 + 82 * (i),
+        width: 64,
+        height: 64,
+        name: sf.name
     }))
-    let selectedInstrument: string
+    let selectedInstrument = soundFonts[Math.floor(Math.random() * soundFonts.length)].name;
+
     const touchEffects = new TouchEffects()
 
     p.setup = () => {
@@ -65,6 +65,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 
     p.preload = () => {
         resetIcon = p.loadImage("/theremax/reset.png")
+        instrumentIcons = new Map(soundFonts.map(s => [s.name, p.loadImage(`/theremax/${s.image}`)]))
     }
 
     p.draw = () => {
@@ -91,10 +92,21 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
         p.textSize(32)
         p.textAlign(p.CENTER)
         for (let instrument of instruments) {
-            p.text(instrument.icon, instrument.x, instrument.y, instrument.width, instrument.height)
+            const icon = instrumentIcons.get(instrument.name)
+            if (!icon) {
+                throw new Error(`No icon found for ${instrument.name}`)
+            }
+            const padding = 4
+            if (selectedInstrument === instrument.name) {
+                p.fill(200, 200, 200)
+            } else {
+                p.fill(100, 100, 100)
+            }
+            p.strokeWeight(2)
+            p.stroke(255, 255, 255)
+            p.rect(instrument.x - padding, instrument.y - padding, instrument.width + padding * 2, instrument.height + padding * 2, 4)
+            p.image(icon, instrument.x, instrument.y, instrument.width, instrument.height)
         }
-        p.textAlign(p.LEFT, p.TOP)
-        p.text(selectedInstrument, screenPadding + resetButton.width, screenPadding + 16)
         p.stroke("white")
         p.line(screenPadding, p.height - screenPadding, (p.width - screenPadding) * progress, p.height - screenPadding)
         tickListener()
@@ -118,7 +130,6 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
         }
         for (let instrument of instruments) {
             if (didClick(instrument)) {
-                selectInstrumentListener(instrument.name)
                 selectedInstrument = instrument.name
                 return true
             }
@@ -129,7 +140,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
         if (handleUI()) {
             return
         }
-        newClickListener(p.mouseX, p.mouseY, 0)
+        newClickListener(p.mouseX, p.mouseY, 0, selectedInstrument)
     }
 
     p.touchStarted = (event) => {
@@ -139,7 +150,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
         }
         if (event instanceof TouchEvent) {
             for (let touch of event.changedTouches) {
-                newClickListener(touch.clientX, touch.clientY, touch.identifier)
+                newClickListener(touch.clientX, touch.clientY, touch.identifier, selectedInstrument)
             }
         }
     }
@@ -202,7 +213,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
         drawListener = callback
     }
 
-    function onNewClick(callback: (x: number, y: number, pointerId: number) => void) {
+    function onNewClick(callback: (x: number, y: number, pointerId: number, instrumentName: string) => void) {
         newClickListener = callback
     }
 
@@ -216,10 +227,6 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 
     function onReset(callback: () => void) {
         resetListener = callback
-    }
-
-    function onSelectInstrument(callback: (instrument: string) => void) {
-        selectInstrumentListener = callback
     }
 
     function updateColumnCount(columns: number) {
@@ -242,7 +249,6 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
         onClickStop,
         onTick,
         onReset,
-        onSelectInstrument,
         updateColumnCount,
         updateProgress
     }
@@ -257,7 +263,7 @@ class TouchEffects {
     add(x: number, y: number) {
         const now = Date.now();
         if (!this.lastRippleMs || now - this.lastRippleMs >= this.msBetweenRipples) {
-            this.ripples.push({ x, y, timestamp: now })
+            this.ripples.push({x, y, timestamp: now})
             this.lastRippleMs = now
         }
     }
@@ -271,7 +277,7 @@ class TouchEffects {
         const white = p.color("white")
         for (let ripple of this.ripples) {
             const ageMs = now - ripple.timestamp
-            p.lerpColor(white, black, 1/(this.maxAgeMs - ageMs))
+            p.lerpColor(white, black, 1 / (this.maxAgeMs - ageMs))
             p.circle(ripple.x, ripple.y, ageMs)
         }
     }
