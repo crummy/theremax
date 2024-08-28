@@ -64,7 +64,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
     }
 
     p.preload = () => {
-        resetIcon = p.loadImage("reset.png")
+        resetIcon = p.loadImage("/theremax/reset.png")
     }
 
     p.draw = () => {
