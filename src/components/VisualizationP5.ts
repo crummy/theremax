@@ -51,7 +51,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
     }))
     let selectedInstrument = soundFonts[Math.floor(Math.random() * soundFonts.length)].name;
 
-    const touchEffects = new TouchEffects()
+    const touchEffects = new SplashEffects()
 
     p.setup = () => {
         p.resizeCanvas(element.clientWidth, element.clientHeight)
@@ -79,6 +79,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
             const green = (colour >> 8) & 0xFF
             const blue = colour & 0xFF
             p.stroke(red, green, blue)
+            p.strokeWeight(8)
             let from = line[0]
             for (let j = 1; j < line.length; j++) {
                 const to = line[j]
@@ -254,9 +255,9 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
     }
 }
 
-class TouchEffects {
+class RippleEffects {
     readonly maxAgeMs = 200
-    readonly msBetweenRipples = 100
+    readonly msBetweenRipples = 16
     lastRippleMs: number | undefined
     ripples: { x: number, y: number, timestamp: number }[] = []
 
@@ -279,6 +280,44 @@ class TouchEffects {
             const ageMs = now - ripple.timestamp
             p.lerpColor(white, black, 1 / (this.maxAgeMs - ageMs))
             p.circle(ripple.x, ripple.y, ageMs)
+        }
+    }
+}
+
+class SplashEffects {
+    readonly maxAgeMs = 200
+    readonly msBetweenSplashes = 100
+
+    lastSplashMs: number | undefined
+    splashes: { x: number, y: number, timestamp: number, direction: number }[] = []
+
+    add(x: number, y: number) {
+        const now = Date.now();
+        if (!this.lastSplashMs || now - this.lastSplashMs >= this.msBetweenSplashes) {
+            const direction = Math.random() * 2 * Math.PI
+            this.splashes.push({x, y, timestamp: now, direction})
+            this.lastSplashMs = now
+        }
+    }
+
+    draw(p: p5) {
+        const now = Date.now()
+        this.splashes = this.splashes.filter(r => now - r.timestamp <= this.maxAgeMs)
+        p.stroke("white")
+        p.noFill()
+        const black = p.color("black")
+        const white = p.color("white")
+        for (let ripple of this.splashes) {
+            const ageMs = now - ripple.timestamp
+            const amt = 1 / (this.maxAgeMs - ageMs);
+            const colour = p.lerpColor(white, black, amt)
+            p.fill(colour)
+            p.noStroke()
+            const position = new p5.Vector(ripple.x, ripple.y)
+            const offset = p5.Vector.fromAngle(ripple.direction).mult(ageMs)
+            const newPosition = position.add(offset)
+            const scale = p.map(ageMs, 0, this.maxAgeMs, 20, 1)
+            p.circle(newPosition.x, newPosition.y, scale)
         }
     }
 }
