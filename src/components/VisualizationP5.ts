@@ -51,6 +51,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
         name: sf
     }))
     let selectedInstrument: string
+    const touchEffects = new TouchEffects()
 
     p.setup = () => {
         p.resizeCanvas(element.clientWidth, element.clientHeight)
@@ -84,6 +85,8 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
                 from = to
             }
         }
+        touchEffects.draw(p)
+
         p.image(resetIcon, resetButton.x, resetButton.y, resetButton.width, resetButton.height);
         p.textSize(32)
         p.textAlign(p.CENTER)
@@ -104,41 +107,35 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
             p.mouseY <= button.y + button.height;
     }
 
-    p.mousePressed = () => {
+    function handleUI() {
         if (!isInitialized) {
             isInitialized = true
-            return
+            return true
         }
         if (didClick(resetButton)) {
             resetListener()
-            return
+            return true
         }
         for (let instrument of instruments) {
             if (didClick(instrument)) {
                 selectInstrumentListener(instrument.name)
                 selectedInstrument = instrument.name
-                return
+                return true
             }
+        }
+    }
+
+    p.mousePressed = () => {
+        if (handleUI()) {
+            return
         }
         newClickListener(p.mouseX, p.mouseY, 0)
     }
 
     p.touchStarted = (event) => {
         // todo: should we go fullscreen?
-        if (!isInitialized) {
-            isInitialized = true
+        if (handleUI()) {
             return
-        }
-        if (didClick(resetButton)) {
-            resetListener()
-            return
-        }
-        for (let instrument of instruments) {
-            if (didClick(instrument)) {
-                selectInstrumentListener(instrument.name)
-                selectedInstrument = instrument.name
-                return
-            }
         }
         if (event instanceof TouchEvent) {
             for (let touch of event.changedTouches) {
@@ -166,6 +163,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
         if (event instanceof TouchEvent) {
             for (let touch of event.changedTouches) {
                 drawListener(touch.clientX, touch.clientY, touch.identifier)
+                touchEffects.add(touch.clientX, touch.clientY)
             }
         }
     }
@@ -249,6 +247,31 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
     }
 }
 
-class Ripples {
+class TouchEffects {
+    readonly maxAgeMs = 200
+    readonly msBetweenRipples = 100
+    lastRippleMs: number | undefined
+    ripples: { x: number, y: number, timestamp: number }[] = []
 
+    add(x: number, y: number) {
+        const now = Date.now();
+        if (!this.lastRippleMs || now - this.lastRippleMs >= this.msBetweenRipples) {
+            this.ripples.push({ x, y, timestamp: now })
+            this.lastRippleMs = now
+        }
+    }
+
+    draw(p: p5) {
+        const now = Date.now()
+        this.ripples = this.ripples.filter(r => now - r.timestamp <= this.maxAgeMs)
+        p.stroke("white")
+        p.noFill()
+        const black = p.color("black")
+        const white = p.color("white")
+        for (let ripple of this.ripples) {
+            const ageMs = now - ripple.timestamp
+            p.lerpColor(white, black, 1/(this.maxAgeMs - ageMs))
+            p.circle(ripple.x, ripple.y, ageMs)
+        }
+    }
 }
