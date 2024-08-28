@@ -123,37 +123,26 @@ export class Theremax {
             }
             return []
         }
+        const newPoints: { x: number, y: number }[][] = []
         for (let recording of this.recordings) {
-            let noteToPlay: Note | undefined = undefined
+            const recordingPoints: { x: number, y: number}[] = []
             // If we are ready to begin playing, set up initial state
             if (recording.lastPlayed === undefined && recording.start.millis <= now) {
-                noteToPlay = recording.start
                 recording.lastPlayed = recording.start
             }
             // Then find the most recent note we are ready to play
             while (recording.lastPlayed?.next !== undefined && recording.lastPlayed.millis <= now) {
-                noteToPlay = recording.lastPlayed
-                recording.lastPlayed = recording.lastPlayed.next;
+                // deduplicate points
+                if (recording.lastPlayed.next.x !== recording.lastPlayed.x || recording.lastPlayed.next.y !== recording.lastPlayed?.y) {
+                    recordingPoints.push(recording.lastPlayed.next)
+                }
+                recording.lastPlayed = recording.lastPlayed.next
             }
             // If we're past the end of the notes, stop the instrument (as it'll loop forever otherwise)
             if (recording.end.millis < now && !recording.activelyRecording) {
                 recording.instrument.stop()
-            } else if (noteToPlay !== undefined) {
-                this.playScaled(noteToPlay.x, noteToPlay.y, recording.instrument);
-            }
-        }
-        const newPoints: { x: number, y: number }[][] = []
-        for (let recording of this.recordings) {
-            const recordingPoints: { x: number, y: number}[] = []
-            let point: Note | undefined = recording.lastPlayed
-            let priorPoint: Note | undefined
-            while (point !== undefined) {
-                // deduplicate points
-                if (point.x !== priorPoint?.x || point.y !== priorPoint?.y) {
-                    recordingPoints.push(point)
-                }
-                priorPoint = point
-                point = point.next
+            } else if (recording.lastPlayed !== undefined) {
+                this.playScaled(recording.lastPlayed.x, recording.lastPlayed.y, recording.instrument);
             }
             newPoints[recording.id] = recordingPoints
         }
