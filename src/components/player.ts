@@ -108,16 +108,15 @@ export class SoundFont implements Instrument {
 
 export const soundFonts: string[] = [
     "acoustic_grand_piano",
-    "alto_sax",
-    "bird_tweet",
+    "alto_sax", // keep
+    "bird_tweet", // keep
     "breath_noise",
-    "cello",
-    "church_organ",
+    "cello", // keep
+    "church_organ", // keep
     "electric_bass_pick",
-    "flute",
-    "fx_3_crystal",
+    "fx_3_crystal", // keep
     "fx_4_atmosphere",
-    "melodic_tom",
+    "melodic_tom", // keep
     "music_box",
     "seashore",
     "taiko_drum",
