@@ -38,7 +38,7 @@ export interface TheremaxVisualization {
 
     getDimensions(): { width: number, height: number }
 
-    connectPoints(points: { x: number, y: number}[], recordingId: number): void
+    addPoints(points: { x: number, y: number }[], recordingId: number): void
 }
 
 export class Theremax {
@@ -54,7 +54,7 @@ export class Theremax {
 
     getContext() {
         if (!this.context) {
-            this.context  = new AudioContext();
+            this.context = new AudioContext();
         }
         return this.context
     }
@@ -79,7 +79,7 @@ export class Theremax {
         const millis = this.timer.getElapsedMs();
         const recording = new Recording(instrument, x, y, millis, pointerId);
         this.recordings.push(recording);
-        return { recordingId: recording.id }
+        return {recordingId: recording.id}
     }
 
     moveDraw(x: number, y: number, pointerId: number) {
@@ -109,9 +109,9 @@ export class Theremax {
         recording.activelyRecording = false;
     }
 
-    tick(): { x: number; y: number }[][] {
+    tick(): { [recordingId: number]: { x: number, y: number }[] } {
         if (!this.isInitialized) {
-            return []
+            return {}
         }
         const now = this.timer.getElapsedMs();
         if (now > this.loopTimeMs) {
@@ -121,11 +121,11 @@ export class Theremax {
                 recording.lastPlayed = undefined;
                 recording.instrument.stop()
             }
-            return []
+            return {}
         }
-        const newPoints: { x: number, y: number }[][] = []
-        for (let recording of this.recordings) {
-            const recordingPoints: { x: number, y: number}[] = []
+        const newPoints: { [recordingId: number]: { x: number, y: number }[] } = {}
+        for (let [recordingId, recording] of Object.entries(this.recordings)) {
+            const recordingPoints: { x: number, y: number }[] = []
             // If we are ready to begin playing, set up initial state
             if (recording.lastPlayed === undefined && recording.start.millis <= now) {
                 recording.lastPlayed = recording.start

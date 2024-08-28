@@ -39,14 +39,15 @@
             theremax?.endDraw(pointerId)
         })
 
+        visualization.onReset(reset)
+
         visualization.onTick(() => {
             if (!isInitialized) {
                 return
             }
             const recordings = theremax.tick()
-            for (let i = 0; i < recordings.length; i++) {
-                let recording = recordings[i];
-                visualization.addPoints(recording, i)
+            for (let [recordingId, points] of Object.entries(recordings)) {
+                visualization.addPoints(points, parseInt(recordingId))
             }
             visualization.updateProgress(theremax.getPercentComplete())
         })

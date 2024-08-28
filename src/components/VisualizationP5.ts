@@ -1,13 +1,45 @@
 import p5 from "p5";
-import {colours} from "./Visualization.ts";
+
+export const screenPadding = 16;
+export const colours = [
+    0x00ff00,
+    0xff0000,
+    0x0000ff,
+    0xffff00,
+    0xff00ff,
+    0x00ffff,
+    0xff8800,
+    0x00ff88,
+    0x8800ff,
+    0x88ff00,
+    0x0088ff,
+    0xff0088,
+    0x8800ff,
+    0x0088ff,
+    0xff0088,
+    0x88ff00,
+    0x00ff88,
+    0xff8800,
+    0x00ffff,
+    0xff00ff,
+    0xffff00,
+    0x0000ff,
+    0xff0000,
+    0x00ff00,
+]
 
 export const VisualizationP5 = (p: p5, element: HTMLElement) => {
-    let lines: { x: number, y: number }[][] = []
+    let lines: { [recordingId: number]: { x: number, y: number }[] } = {}
+
     let isInitialized = false
     let drawListener: (x: number, y: number, pointerId: number) => void = () => null
     let newClickListener: (x: number, y: number, pointerId: number) => void = () => null
     let clickStopListener: (pointerId: number) => void = () => null
     let tickListener: () => void = () => null
+    let resetListener: () => void = () => null
+    let progress = 0
+    let resetIcon: p5.Image
+    const resetButton = {x: screenPadding, y: screenPadding, width: 64, height: 64}
 
     p.setup = () => {
         p.resizeCanvas(element.clientWidth, element.clientHeight)
@@ -17,14 +49,17 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
         p.text("Welcome to the Theremax. Click anywhere to start", p.width / 2, p.height / 2)
     }
 
+    p.preload = () => {
+        resetIcon = p.loadImage("theremax/reset.png")
+    }
+
     p.draw = () => {
         if (!isInitialized) {
             return
         }
         p.background("black")
-        for (let i = 0; i < lines.length; i++){
-            const line = lines[i];
-            const colour = colours[i % colours.length]
+        for (let [recordingId, line] of Object.entries(lines)) {
+            const colour = colours[parseInt(recordingId) % colours.length]
             const red = (colour >> 16) & 0xFF
             const green = (colour >> 8) & 0xFF
             const blue = colour & 0xFF
@@ -36,13 +71,26 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
                 from = to
             }
         }
+        p.image(resetIcon, resetButton.x, resetButton.y, resetButton.width, resetButton.height);
+        p.stroke("white")
+        p.line(screenPadding, p.height - screenPadding, (p.width - screenPadding) * progress, p.height - screenPadding)
         tickListener()
+    }
+
+    function didClick(button: { x: number; width: number; y: number; height: number }) {
+        return p.mouseX >= button.x &&
+            p.mouseX <= button.x + button.width &&
+            p.mouseY >= button.y &&
+            p.mouseY <= button.y + button.height;
     }
 
     p.mousePressed = () => {
         if (!isInitialized) {
             isInitialized = true
             return
+        }
+        if (didClick(resetButton)) {
+            resetListener()
         }
         newClickListener(p.mouseX, p.mouseY, 0)
     }
@@ -62,7 +110,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
     }
 
     function clearLines() {
-        lines = []
+        lines = {}
     }
 
     function createLine(x: number, y: number, recordingId: number) {
@@ -99,6 +147,10 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
         tickListener = callback
     }
 
+    function onReset(callback: () => void) {
+        resetListener = callback
+    }
+
     function updateColumnCount(columns: number) {
         if (columns) {
             // columns.count = columns
@@ -106,7 +158,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
     }
 
     function updateProgress(percent: number) {
-
+        progress = percent
     }
 
     return {
@@ -118,6 +170,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
         onNewClick,
         onClickStop,
         onTick,
+        onReset,
         updateColumnCount,
         updateProgress
     }
