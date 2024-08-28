@@ -42,6 +42,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 		soundFonts[Math.floor(Math.random() * soundFonts.length)].name;
 
 	let touchEffects: SplashEffects;
+	let grid: Grid;
 
 	p.setup = () => {
 		p.resizeCanvas(element.clientWidth, element.clientHeight);
@@ -56,6 +57,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 			p.height / 2,
 		);
 		touchEffects = new SplashEffects(p);
+		grid = new Grid(p);
 	};
 
 	p.preload = () => {
@@ -71,6 +73,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 		}
 		p.background("black");
 		touchEffects.draw(p);
+		grid.draw(p);
 		for (const [recordingId, line] of Object.entries(lines)) {
 			const colour = colours[Number.parseInt(recordingId) % colours.length];
 			const red = (colour >> 16) & 0xff;
@@ -208,6 +211,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 			for (const touch of event.changedTouches) {
 				drawListener(touch.clientX, touch.clientY, touch.identifier);
 				touchEffects.add(touch.clientX, touch.clientY);
+				grid.touched(touch.clientX, touch.clientY);
 			}
 		}
 	};
@@ -218,6 +222,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 		}
 		drawListener(p.mouseX, p.mouseY, 0);
 		touchEffects.add(p.mouseX, p.mouseY);
+		grid.touched(p.mouseX, p.mouseY);
 	};
 
 	function clearLines() {
@@ -333,6 +338,77 @@ class SplashEffects {
 			const newPosition = position.add(offset);
 			const scale = this.pg.map(ageMs, 0, this.maxAgeMs, 20, 1);
 			this.pg.circle(newPosition.x, newPosition.y, scale);
+		}
+		p.image(this.pg, 0, 0);
+	}
+}
+
+class Grid {
+	private readonly distanceBetweenPoints = 32;
+	private readonly pg: p5.Graphics;
+	private readonly originalPositions: p5.Vector[][] = [];
+	private readonly points: p5.Vector[][] = [];
+	private readonly velocities: p5.Vector[][] = [];
+
+	constructor(p: p5) {
+		this.pg = p.createGraphics(p.width, p.height);
+		for (let y = 0; y < p.height; y += this.distanceBetweenPoints) {
+			const row: p5.Vector[] = [];
+			const velocityRow: p5.Vector[] = [];
+			const originalPositionRow: p5.Vector[] = [];
+			for (let x = 0; x < p.width; x += this.distanceBetweenPoints) {
+				row.push(new p5.Vector(x, y));
+				velocityRow.push(new p5.Vector(0, 0));
+				originalPositionRow.push(new p5.Vector(x, y));
+			}
+			this.points.push(row);
+			this.velocities.push(velocityRow);
+			this.originalPositions.push(originalPositionRow);
+		}
+	}
+
+	touched(x: number, y: number) {
+		const touchPoint = new p5.Vector(x, y);
+		for (let j = 0; j < this.points.length; j++) {
+			for (let i = 0; i < this.points[j].length; i++) {
+				const point = this.points[j][i];
+				const velocity = this.velocities[j][i];
+				const boost = point
+					.copy()
+					.sub(touchPoint)
+					.mult(1 / point.dist(touchPoint));
+				velocity.add(boost);
+			}
+		}
+	}
+
+	draw(p: p5) {
+		this.pg.background("black");
+		this.pg.stroke("#444");
+		this.pg.strokeWeight(1);
+		for (let j = 0; j < this.points.length; j++) {
+			const row = this.points[j];
+			for (let i = 0; i < row.length; i++) {
+				const point = row[i];
+				const velocity = this.velocities[j][i];
+				const originalPosition = this.originalPositions[j][i];
+				const toOriginalPosition = originalPosition
+					.copy()
+					.sub(point)
+					.mult(1 / point.dist(originalPosition));
+				velocity.add(toOriginalPosition);
+				point.add(velocity);
+				velocity.mult(0.8);
+
+				const right = row[i + 1];
+				const below = this.points[j + 1]?.[i];
+				if (right) {
+					this.pg.line(point.x, point.y, right.x, right.y);
+				}
+				if (below) {
+					this.pg.line(point.x, point.y, below.x, below.y);
+				}
+			}
 		}
 		p.image(this.pg, 0, 0);
 	}
