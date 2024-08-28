@@ -44,9 +44,9 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
     const resetButton = {x: screenPadding, y: screenPadding, width: 64, height: 64}
     const instruments = soundFonts.map((sf, i) => ({
         x: screenPadding,
-        y: screenPadding + 64 * (i + 1),
-        width: 64,
-        height: 64,
+        y: screenPadding + 64 + 32 * (i),
+        width: 32,
+        height: 32,
         icon: "🎹",
         name: sf
     }))
@@ -173,6 +173,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
             return
         }
         drawListener(p.mouseX, p.mouseY, 0)
+        touchEffects.add(p.mouseX, p.mouseY)
     }
 
     function clearLines() {
