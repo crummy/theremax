@@ -1,323 +1,374 @@
 import p5 from "p5";
-import {soundFonts} from "./player.ts";
+import { soundFonts } from "./player.ts";
 
 export const screenPadding = 16;
 export const colours = [
-    0x00ff00,
-    0xff0000,
-    0x0000ff,
-    0xffff00,
-    0xff00ff,
-    0x00ffff,
-    0xff8800,
-    0x00ff88,
-    0x8800ff,
-    0x88ff00,
-    0x0088ff,
-    0xff0088,
-    0x8800ff,
-    0x0088ff,
-    0xff0088,
-    0x88ff00,
-    0x00ff88,
-    0xff8800,
-    0x00ffff,
-    0xff00ff,
-    0xffff00,
-    0x0000ff,
-    0xff0000,
-    0x00ff00,
-]
+	0x00ff00, 0xff0000, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff, 0xff8800,
+	0x00ff88, 0x8800ff, 0x88ff00, 0x0088ff, 0xff0088, 0x8800ff, 0x0088ff,
+	0xff0088, 0x88ff00, 0x00ff88, 0xff8800, 0x00ffff, 0xff00ff, 0xffff00,
+	0x0000ff, 0xff0000, 0x00ff00,
+];
 
 export const VisualizationP5 = (p: p5, element: HTMLElement) => {
-    let lines: { [recordingId: number]: { x: number, y: number }[] } = {}
+	let lines: { [recordingId: number]: { x: number; y: number }[] } = {};
 
-    let isInitialized = false
-    let drawListener: (x: number, y: number, pointerId: number) => void = () => null
-    let newClickListener: (x: number, y: number, pointerId: number, instrumentName: string) => void = () => null
-    let clickStopListener: (pointerId: number) => void = () => null
-    let tickListener: () => void = () => null
-    let resetListener: () => void = () => null
-    let progress = 0
-    let resetIcon: p5.Image
-    let instrumentIcons: Map<string, p5.Image>
-    const resetButton = {x: screenPadding, y: screenPadding, width: 64, height: 64}
-    const instruments = soundFonts.map((sf, i) => ({
-        x: screenPadding,
-        y: screenPadding + 82 + 82 * (i),
-        width: 64,
-        height: 64,
-        name: sf.name
-    }))
-    let selectedInstrument = soundFonts[Math.floor(Math.random() * soundFonts.length)].name;
+	let isInitialized = false;
+	let drawListener: (x: number, y: number, pointerId: number) => void = () =>
+		null;
+	let newClickListener: (
+		x: number,
+		y: number,
+		pointerId: number,
+		instrumentName: string,
+	) => void = () => null;
+	let clickStopListener: (pointerId: number) => void = () => null;
+	let tickListener: () => void = () => null;
+	let resetListener: () => void = () => null;
+	let progress = 0;
+	let resetIcon: p5.Image;
+	let instrumentIcons: Map<string, p5.Image>;
+	const resetButton = {
+		x: screenPadding,
+		y: screenPadding,
+		width: 64,
+		height: 64,
+	};
+	const instruments = soundFonts.map((sf, i) => ({
+		x: screenPadding,
+		y: screenPadding + 82 + 82 * i,
+		width: 64,
+		height: 64,
+		name: sf.name,
+	}));
+	let selectedInstrument =
+		soundFonts[Math.floor(Math.random() * soundFonts.length)].name;
 
-    const touchEffects = new SplashEffects()
+	const touchEffects = new SplashEffects();
 
-    p.setup = () => {
-        p.resizeCanvas(element.clientWidth, element.clientHeight)
-        p.fill(200, 200, 200)
-        p.rect(p.width / 2 - 200, p.height / 2 - 40, 400, 80)
-        p.fill(100, 100, 100)
-        p.textAlign(p.CENTER, p.CENTER)
-        p.textSize(32)
-        p.text("Welcome to the Theremax.\nClick anywhere to start", p.width / 2, p.height / 2)
-    }
+	p.setup = () => {
+		p.resizeCanvas(element.clientWidth, element.clientHeight);
+		p.fill(200, 200, 200);
+		p.rect(p.width / 2 - 200, p.height / 2 - 40, 400, 80);
+		p.fill(100, 100, 100);
+		p.textAlign(p.CENTER, p.CENTER);
+		p.textSize(32);
+		p.text(
+			"Welcome to the Theremax.\nClick anywhere to start",
+			p.width / 2,
+			p.height / 2,
+		);
+	};
 
-    p.preload = () => {
-        resetIcon = p.loadImage("/theremax/reset.png")
-        instrumentIcons = new Map(soundFonts.map(s => [s.name, p.loadImage(`/theremax/${s.image}`)]))
-    }
+	p.preload = () => {
+		resetIcon = p.loadImage("/theremax/reset.png");
+		instrumentIcons = new Map(
+			soundFonts.map((s) => [s.name, p.loadImage(`/theremax/${s.image}`)]),
+		);
+	};
 
-    p.draw = () => {
-        if (!isInitialized) {
-            return
-        }
-        p.background("black")
-        for (let [recordingId, line] of Object.entries(lines)) {
-            const colour = colours[parseInt(recordingId) % colours.length]
-            const red = (colour >> 16) & 0xFF
-            const green = (colour >> 8) & 0xFF
-            const blue = colour & 0xFF
-            p.stroke(red, green, blue)
-            p.strokeWeight(8)
-            let from = line[0]
-            for (let j = 1; j < line.length; j++) {
-                const to = line[j]
-                p.line(from.x, from.y, to.x, to.y)
-                from = to
-            }
-        }
-        touchEffects.draw(p)
+	p.draw = () => {
+		if (!isInitialized) {
+			return;
+		}
+		p.background("black");
+		for (const [recordingId, line] of Object.entries(lines)) {
+			const colour = colours[Number.parseInt(recordingId) % colours.length];
+			const red = (colour >> 16) & 0xff;
+			const green = (colour >> 8) & 0xff;
+			const blue = colour & 0xff;
+			p.stroke(red, green, blue);
+			p.strokeWeight(8);
+			let from = line[0];
+			for (let j = 1; j < line.length; j++) {
+				const to = line[j];
+				p.line(from.x, from.y, to.x, to.y);
+				from = to;
+			}
+		}
+		touchEffects.draw(p);
 
-        p.image(resetIcon, resetButton.x, resetButton.y, resetButton.width, resetButton.height);
-        p.textSize(32)
-        p.textAlign(p.CENTER)
-        for (let instrument of instruments) {
-            const icon = instrumentIcons.get(instrument.name)
-            if (!icon) {
-                throw new Error(`No icon found for ${instrument.name}`)
-            }
-            const padding = 4
-            if (selectedInstrument === instrument.name) {
-                p.fill(200, 200, 200)
-            } else {
-                p.fill(100, 100, 100)
-            }
-            p.strokeWeight(2)
-            p.stroke(255, 255, 255)
-            p.rect(instrument.x - padding, instrument.y - padding, instrument.width + padding * 2, instrument.height + padding * 2, 4)
-            p.image(icon, instrument.x, instrument.y, instrument.width, instrument.height)
-        }
-        p.stroke("white")
-        p.line(screenPadding, p.height - screenPadding, (p.width - screenPadding) * progress, p.height - screenPadding)
-        tickListener()
-    }
+		p.image(
+			resetIcon,
+			resetButton.x,
+			resetButton.y,
+			resetButton.width,
+			resetButton.height,
+		);
+		p.textSize(32);
+		p.textAlign(p.CENTER);
+		for (const instrument of instruments) {
+			const icon = instrumentIcons.get(instrument.name);
+			if (!icon) {
+				throw new Error(`No icon found for ${instrument.name}`);
+			}
+			const padding = 4;
+			if (selectedInstrument === instrument.name) {
+				p.fill(200, 200, 200);
+			} else {
+				p.fill(100, 100, 100);
+			}
+			p.strokeWeight(2);
+			p.stroke(255, 255, 255);
+			p.rect(
+				instrument.x - padding,
+				instrument.y - padding,
+				instrument.width + padding * 2,
+				instrument.height + padding * 2,
+				4,
+			);
+			p.image(
+				icon,
+				instrument.x,
+				instrument.y,
+				instrument.width,
+				instrument.height,
+			);
+		}
+		p.stroke("white");
+		p.line(
+			screenPadding,
+			p.height - screenPadding,
+			(p.width - screenPadding) * progress,
+			p.height - screenPadding,
+		);
+		tickListener();
+	};
 
-    function didClick(button: { x: number; width: number; y: number; height: number }) {
-        return p.mouseX >= button.x &&
-            p.mouseX <= button.x + button.width &&
-            p.mouseY >= button.y &&
-            p.mouseY <= button.y + button.height;
-    }
+	function didClick(button: {
+		x: number;
+		width: number;
+		y: number;
+		height: number;
+	}) {
+		return (
+			p.mouseX >= button.x &&
+			p.mouseX <= button.x + button.width &&
+			p.mouseY >= button.y &&
+			p.mouseY <= button.y + button.height
+		);
+	}
 
-    function handleUI() {
-        if (!isInitialized) {
-            isInitialized = true
-            return true
-        }
-        if (didClick(resetButton)) {
-            resetListener()
-            return true
-        }
-        for (let instrument of instruments) {
-            if (didClick(instrument)) {
-                selectedInstrument = instrument.name
-                return true
-            }
-        }
-    }
+	function handleUI() {
+		if (!isInitialized) {
+			isInitialized = true;
+			return true;
+		}
+		if (didClick(resetButton)) {
+			resetListener();
+			return true;
+		}
+		for (const instrument of instruments) {
+			if (didClick(instrument)) {
+				selectedInstrument = instrument.name;
+				return true;
+			}
+		}
+	}
 
-    p.mousePressed = () => {
-        if (handleUI()) {
-            return
-        }
-        newClickListener(p.mouseX, p.mouseY, 0, selectedInstrument)
-    }
+	p.mousePressed = () => {
+		if (handleUI()) {
+			return;
+		}
+		newClickListener(p.mouseX, p.mouseY, 0, selectedInstrument);
+	};
 
-    p.touchStarted = (event) => {
-        // todo: should we go fullscreen?
-        if (handleUI()) {
-            return
-        }
-        if (event instanceof TouchEvent) {
-            for (let touch of event.changedTouches) {
-                newClickListener(touch.clientX, touch.clientY, touch.identifier, selectedInstrument)
-            }
-        }
-    }
+	p.touchStarted = (event) => {
+		// todo: should we go fullscreen?
+		if (handleUI()) {
+			return;
+		}
+		if (event instanceof TouchEvent) {
+			for (const touch of event.changedTouches) {
+				newClickListener(
+					touch.clientX,
+					touch.clientY,
+					touch.identifier,
+					selectedInstrument,
+				);
+			}
+		}
+	};
 
-    p.touchEnded = (event) => {
-        if (event instanceof TouchEvent) {
-            for (let touch of event.changedTouches) {
-                clickStopListener(touch.identifier)
-            }
-        }
-    }
+	p.touchEnded = (event) => {
+		if (event instanceof TouchEvent) {
+			for (const touch of event.changedTouches) {
+				clickStopListener(touch.identifier);
+			}
+		}
+	};
 
-    p.mouseReleased = () => {
-        clickStopListener(0)
-    }
+	p.mouseReleased = () => {
+		clickStopListener(0);
+	};
 
-    p.touchMoved = (event) => {
-        if (!isInitialized) {
-            return
-        }
-        if (event instanceof TouchEvent) {
-            for (let touch of event.changedTouches) {
-                drawListener(touch.clientX, touch.clientY, touch.identifier)
-                touchEffects.add(touch.clientX, touch.clientY)
-            }
-        }
-    }
+	p.touchMoved = (event) => {
+		if (!isInitialized) {
+			return;
+		}
+		if (event instanceof TouchEvent) {
+			for (const touch of event.changedTouches) {
+				drawListener(touch.clientX, touch.clientY, touch.identifier);
+				touchEffects.add(touch.clientX, touch.clientY);
+			}
+		}
+	};
 
-    p.mouseDragged = () => {
-        if (!isInitialized) {
-            return
-        }
-        drawListener(p.mouseX, p.mouseY, 0)
-        touchEffects.add(p.mouseX, p.mouseY)
-    }
+	p.mouseDragged = () => {
+		if (!isInitialized) {
+			return;
+		}
+		drawListener(p.mouseX, p.mouseY, 0);
+		touchEffects.add(p.mouseX, p.mouseY);
+	};
 
-    function clearLines() {
-        lines = {}
-    }
+	function clearLines() {
+		lines = {};
+	}
 
-    function createLine(x: number, y: number, recordingId: number) {
-        lines[recordingId] = []
-        lines[recordingId].push({x, y})
-    }
+	function createLine(x: number, y: number, recordingId: number) {
+		lines[recordingId] = [];
+		lines[recordingId].push({ x, y });
+	}
 
-    function getDimensions(): { width: number, height: number } {
-        return {width: p.width, height: p.height}
-    }
+	function getDimensions(): { width: number; height: number } {
+		return { width: p.width, height: p.height };
+	}
 
-    function addPoints(points: { x: number; y: number; }[], recordingId: number) {
-        let line = lines[recordingId]
-        if (!line) {
-            line = []
-            lines[recordingId] = line
-        }
-        line.push(...points)
-    }
+	function addPoints(points: { x: number; y: number }[], recordingId: number) {
+		let line = lines[recordingId];
+		if (!line) {
+			line = [];
+			lines[recordingId] = line;
+		}
+		line.push(...points);
+	}
 
-    function onDraw(callback: (x: number, y: number, pointerId: number) => void) {
-        drawListener = callback
-    }
+	function onDraw(callback: (x: number, y: number, pointerId: number) => void) {
+		drawListener = callback;
+	}
 
-    function onNewClick(callback: (x: number, y: number, pointerId: number, instrumentName: string) => void) {
-        newClickListener = callback
-    }
+	function onNewClick(
+		callback: (
+			x: number,
+			y: number,
+			pointerId: number,
+			instrumentName: string,
+		) => void,
+	) {
+		newClickListener = callback;
+	}
 
-    function onClickStop(callback: (pointerId: number) => void) {
-        clickStopListener = callback
-    }
+	function onClickStop(callback: (pointerId: number) => void) {
+		clickStopListener = callback;
+	}
 
-    function onTick(callback: () => void) {
-        tickListener = callback
-    }
+	function onTick(callback: () => void) {
+		tickListener = callback;
+	}
 
-    function onReset(callback: () => void) {
-        resetListener = callback
-    }
+	function onReset(callback: () => void) {
+		resetListener = callback;
+	}
 
-    function updateColumnCount(columns: number) {
-        if (columns) {
-            // columns.count = columns
-        }
-    }
+	function updateColumnCount(columns: number) {
+		if (columns) {
+			// columns.count = columns
+		}
+	}
 
-    function updateProgress(percent: number) {
-        progress = percent
-    }
+	function updateProgress(percent: number) {
+		progress = percent;
+	}
 
-    return {
-        clearLines,
-        createLine,
-        getDimensions,
-        addPoints,
-        onDraw,
-        onNewClick,
-        onClickStop,
-        onTick,
-        onReset,
-        updateColumnCount,
-        updateProgress
-    }
-}
+	return {
+		clearLines,
+		createLine,
+		getDimensions,
+		addPoints,
+		onDraw,
+		onNewClick,
+		onClickStop,
+		onTick,
+		onReset,
+		updateColumnCount,
+		updateProgress,
+	};
+};
 
 class RippleEffects {
-    readonly maxAgeMs = 200
-    readonly msBetweenRipples = 16
-    lastRippleMs: number | undefined
-    ripples: { x: number, y: number, timestamp: number }[] = []
+	readonly maxAgeMs = 200;
+	readonly msBetweenRipples = 16;
+	lastRippleMs: number | undefined;
+	ripples: { x: number; y: number; timestamp: number }[] = [];
 
-    add(x: number, y: number) {
-        const now = Date.now();
-        if (!this.lastRippleMs || now - this.lastRippleMs >= this.msBetweenRipples) {
-            this.ripples.push({x, y, timestamp: now})
-            this.lastRippleMs = now
-        }
-    }
+	add(x: number, y: number) {
+		const now = Date.now();
+		if (
+			!this.lastRippleMs ||
+			now - this.lastRippleMs >= this.msBetweenRipples
+		) {
+			this.ripples.push({ x, y, timestamp: now });
+			this.lastRippleMs = now;
+		}
+	}
 
-    draw(p: p5) {
-        const now = Date.now()
-        this.ripples = this.ripples.filter(r => now - r.timestamp <= this.maxAgeMs)
-        p.stroke("white")
-        p.noFill()
-        const black = p.color("black")
-        const white = p.color("white")
-        for (let ripple of this.ripples) {
-            const ageMs = now - ripple.timestamp
-            p.lerpColor(white, black, 1 / (this.maxAgeMs - ageMs))
-            p.circle(ripple.x, ripple.y, ageMs)
-        }
-    }
+	draw(p: p5) {
+		const now = Date.now();
+		this.ripples = this.ripples.filter(
+			(r) => now - r.timestamp <= this.maxAgeMs,
+		);
+		p.stroke("white");
+		p.noFill();
+		const black = p.color("black");
+		const white = p.color("white");
+		for (const ripple of this.ripples) {
+			const ageMs = now - ripple.timestamp;
+			p.lerpColor(white, black, 1 / (this.maxAgeMs - ageMs));
+			p.circle(ripple.x, ripple.y, ageMs);
+		}
+	}
 }
 
 class SplashEffects {
-    readonly maxAgeMs = 200
-    readonly msBetweenSplashes = 100
+	readonly maxAgeMs = 200;
+	readonly msBetweenSplashes = 100;
 
-    lastSplashMs: number | undefined
-    splashes: { x: number, y: number, timestamp: number, direction: number }[] = []
+	lastSplashMs: number | undefined;
+	splashes: { x: number; y: number; timestamp: number; direction: number }[] =
+		[];
 
-    add(x: number, y: number) {
-        const now = Date.now();
-        if (!this.lastSplashMs || now - this.lastSplashMs >= this.msBetweenSplashes) {
-            const direction = Math.random() * 2 * Math.PI
-            this.splashes.push({x, y, timestamp: now, direction})
-            this.lastSplashMs = now
-        }
-    }
+	add(x: number, y: number) {
+		const now = Date.now();
+		if (
+			!this.lastSplashMs ||
+			now - this.lastSplashMs >= this.msBetweenSplashes
+		) {
+			const direction = Math.random() * 2 * Math.PI;
+			this.splashes.push({ x, y, timestamp: now, direction });
+			this.lastSplashMs = now;
+		}
+	}
 
-    draw(p: p5) {
-        const now = Date.now()
-        this.splashes = this.splashes.filter(r => now - r.timestamp <= this.maxAgeMs)
-        p.stroke("white")
-        p.noFill()
-        const black = p.color("black")
-        const white = p.color("white")
-        for (let ripple of this.splashes) {
-            const ageMs = now - ripple.timestamp
-            const amt = 1 / (this.maxAgeMs - ageMs);
-            const colour = p.lerpColor(white, black, amt)
-            p.fill(colour)
-            p.noStroke()
-            const position = new p5.Vector(ripple.x, ripple.y)
-            const offset = p5.Vector.fromAngle(ripple.direction).mult(ageMs)
-            const newPosition = position.add(offset)
-            const scale = p.map(ageMs, 0, this.maxAgeMs, 20, 1)
-            p.circle(newPosition.x, newPosition.y, scale)
-        }
-    }
+	draw(p: p5) {
+		const now = Date.now();
+		this.splashes = this.splashes.filter(
+			(r) => now - r.timestamp <= this.maxAgeMs,
+		);
+		p.stroke("white");
+		p.noFill();
+		const black = p.color("black");
+		const white = p.color("white");
+		for (const ripple of this.splashes) {
+			const ageMs = now - ripple.timestamp;
+			const amt = 1 / (this.maxAgeMs - ageMs);
+			const colour = p.lerpColor(white, black, amt);
+			p.fill(colour);
+			p.noStroke();
+			const position = new p5.Vector(ripple.x, ripple.y);
+			const offset = p5.Vector.fromAngle(ripple.direction).mult(ageMs);
+			const newPosition = position.add(offset);
+			const scale = p.map(ageMs, 0, this.maxAgeMs, 20, 1);
+			p.circle(newPosition.x, newPosition.y, scale);
+		}
+	}
 }
