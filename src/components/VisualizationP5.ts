@@ -41,7 +41,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 	let selectedInstrument =
 		soundFonts[Math.floor(Math.random() * soundFonts.length)].name;
 
-	const touchEffects = new SplashEffects();
+	let touchEffects: SplashEffects;
 
 	p.setup = () => {
 		p.resizeCanvas(element.clientWidth, element.clientHeight);
@@ -55,6 +55,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 			p.width / 2,
 			p.height / 2,
 		);
+		touchEffects = new SplashEffects(p);
 	};
 
 	p.preload = () => {
@@ -69,6 +70,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 			return;
 		}
 		p.background("black");
+		touchEffects.draw(p);
 		for (const [recordingId, line] of Object.entries(lines)) {
 			const colour = colours[Number.parseInt(recordingId) % colours.length];
 			const red = (colour >> 16) & 0xff;
@@ -83,7 +85,6 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 				from = to;
 			}
 		}
-		touchEffects.draw(p);
 
 		p.image(
 			resetIcon,
@@ -328,12 +329,21 @@ class RippleEffects {
 }
 
 class SplashEffects {
-	readonly maxAgeMs = 200;
-	readonly msBetweenSplashes = 100;
+	private readonly maxAgeMs = 100;
+	private readonly msBetweenSplashes = 100;
+	private lastSplashMs: number | undefined;
+	private splashes: {
+		x: number;
+		y: number;
+		timestamp: number;
+		direction: number;
+	}[] = [];
+	private readonly pg: p5.Graphics;
 
-	lastSplashMs: number | undefined;
-	splashes: { x: number; y: number; timestamp: number; direction: number }[] =
-		[];
+	constructor(p: p5) {
+		this.pg = p.createGraphics(p.width, p.height);
+		this.pg.background("black");
+	}
 
 	add(x: number, y: number) {
 		const now = Date.now();
@@ -348,25 +358,24 @@ class SplashEffects {
 	}
 
 	draw(p: p5) {
+		this.pg.noStroke();
+		this.pg.background(0, 0, 0, 20);
 		const now = Date.now();
 		this.splashes = this.splashes.filter(
 			(r) => now - r.timestamp <= this.maxAgeMs,
 		);
-		p.stroke("white");
-		p.noFill();
-		const black = p.color("black");
-		const white = p.color("white");
+		this.pg.stroke("white");
+		this.pg.noFill();
 		for (const ripple of this.splashes) {
 			const ageMs = now - ripple.timestamp;
-			const amt = 1 / (this.maxAgeMs - ageMs);
-			const colour = p.lerpColor(white, black, amt);
-			p.fill(colour);
-			p.noStroke();
+			this.pg.fill("white");
+			this.pg.noStroke();
 			const position = new p5.Vector(ripple.x, ripple.y);
 			const offset = p5.Vector.fromAngle(ripple.direction).mult(ageMs);
 			const newPosition = position.add(offset);
-			const scale = p.map(ageMs, 0, this.maxAgeMs, 20, 1);
-			p.circle(newPosition.x, newPosition.y, scale);
+			const scale = this.pg.map(ageMs, 0, this.maxAgeMs, 20, 1);
+			this.pg.circle(newPosition.x, newPosition.y, scale);
 		}
+		p.image(this.pg, 0, 0);
 	}
 }
