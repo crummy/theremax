@@ -1,11 +1,56 @@
 <script lang="ts">
     import {SoundFont} from "./player.ts";
-    import {Visualization} from "./Visualization.ts";
     import {Theremax} from "./Theremax.ts";
+    import p5 from 'p5'
+    import {VisualizationP5} from "./VisualizationP5.ts";
+    import {onMount} from "svelte";
 
     let isInitialized = false;
-    const visualization = new Visualization();
-    const theremax = new Theremax(visualization)
+
+    let theremax: Theremax
+    let visualization: ReturnType<typeof VisualizationP5>;
+    onMount(() => {
+        const element = document.getElementById('sketch');
+        if (!element) {
+            throw new Error("Could not find sketch element")
+        }
+        new p5((p) => {
+            visualization = VisualizationP5(p, element);
+            return visualization
+        }, element)
+
+        visualization.onDraw((x, y, pointerId) => {
+            theremax?.moveDraw(x, y, pointerId)
+        })
+
+        visualization.onNewClick(async (x, y, pointerId) => {
+            if (!isInitialized) {
+                theremax = new Theremax(visualization)
+                await theremax.init();
+                isInitialized = true
+            }
+            const inst = new SoundFont(theremax.getContext(), instrument)
+            visualization.updateColumnCount(inst.getIntervals())
+            const {recordingId} = theremax.beginDraw(x, y, pointerId, inst)
+            visualization.createLine(x, y, recordingId)
+        })
+
+        visualization.onClickStop((pointerId) => {
+            theremax?.endDraw(pointerId)
+        })
+
+        visualization.onTick(() => {
+            if (!isInitialized) {
+                return
+            }
+            const recordings = theremax.tick()
+            for (let i = 0; i < recordings.length; i++) {
+                let recording = recordings[i];
+                visualization.addPoints(recording, i)
+            }
+            visualization.updateProgress(theremax.getPercentComplete())
+        })
+    })
 
     let soundFonts: string[] = [
         "acoustic_grand_piano",
@@ -32,36 +77,6 @@
 
     function reset() {
         theremax.reset();
-    }
-
-    async function init() {
-        const element: HTMLElement | null = document.querySelector("#pixi");
-        if (!element) {
-            throw new Error("Element #pixi not found");
-        }
-        await visualization.init(element);
-        await theremax.init();
-
-        visualization.onDraw((x, y, pointerId) => {
-            theremax.moveDraw(x, y, pointerId)
-        })
-
-        visualization.onNewClick((x, y, pointerId) => {
-            const inst = new SoundFont(theremax.getContext(), instrument)
-            visualization.updateColumnCount(inst.getIntervals())
-            theremax.beginDraw(x, y, pointerId, inst)
-        })
-
-        visualization.onClickStop((pointerId) => {
-            theremax.endDraw(pointerId)
-        })
-
-        visualization.onTick(() => {
-            theremax.tick()
-            visualization.updateProgress(theremax.getPercentComplete())
-        })
-
-        isInitialized = true
     }
 </script>
 
@@ -90,7 +105,7 @@
         height: 100dvh;
     }
 
-    #pixi {
+    #sketch {
         flex-grow: 1;
     }
 
@@ -113,8 +128,6 @@
     <div id="controls">
         {#if isInitialized}
             <button on:click={reset}>Reset</button>
-        {:else}
-            <button on:click={init}>Play</button>
         {/if}
         {#if isInitialized}
             <ul class="instruments">
@@ -126,5 +139,5 @@
             </ul>
         {/if}
     </div>
-    <div id="pixi"></div>
+    <div id="sketch"></div>
 </div>

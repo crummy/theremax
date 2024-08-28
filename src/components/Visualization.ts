@@ -3,7 +3,7 @@ import type {TheremaxVisualization} from "./Theremax.ts";
 import {lerp} from "./lerp.ts";
 
 const screenPadding = 16;
-const colours = [
+export const colours = [
     0x00ff00,
     0xff0000,
     0x0000ff,

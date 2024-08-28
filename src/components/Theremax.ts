@@ -2,20 +2,20 @@ import {Timer} from "./Timer.ts";
 import type {Instrument} from "./player.ts";
 import {lerp} from "./lerp.ts";
 
-interface Instant {
+interface Note {
     millis: number
     x: number
     y: number
-    next: Instant | undefined
+    next: Note | undefined
 }
 
 
 let recordingIdCount = 0;
 
 class Recording {
-    start: Instant
-    lastPlayed: Instant | undefined
-    end: Instant
+    start: Note
+    lastPlayed: Note | undefined
+    end: Note
     activelyRecording = true
     id = recordingIdCount++
 
@@ -79,7 +79,7 @@ export class Theremax {
         const millis = this.timer.getElapsedMs();
         const recording = new Recording(instrument, x, y, millis, pointerId);
         this.recordings.push(recording);
-        this.vis.createLine(x, y, recording.id)
+        return { recordingId: recording.id }
     }
 
     moveDraw(x: number, y: number, pointerId: number) {
@@ -109,9 +109,9 @@ export class Theremax {
         recording.activelyRecording = false;
     }
 
-    tick() {
+    tick(): { x: number; y: number }[][] {
         if (!this.isInitialized) {
-            return
+            return []
         }
         const now = this.timer.getElapsedMs();
         if (now > this.loopTimeMs) {
@@ -120,30 +120,44 @@ export class Theremax {
             for (let recording of this.recordings) {
                 recording.lastPlayed = undefined;
                 recording.instrument.stop()
-                this.vis.createLine(recording.start.x, recording.start.y, recording.id)
             }
-            return
+            return []
         }
         for (let recording of this.recordings) {
-            let noteToPlay: { x: number, y: number } | undefined = undefined
-            let pointsToDraw: { x: number, y: number }[] = []
+            let noteToPlay: Note | undefined = undefined
+            // If we are ready to begin playing, set up initial state
             if (recording.lastPlayed === undefined && recording.start.millis <= now) {
                 noteToPlay = recording.start
-                pointsToDraw.push(recording.start)
                 recording.lastPlayed = recording.start
             }
-            while (recording.lastPlayed?.next !== undefined && recording.lastPlayed.millis < now) {
+            // Then find the most recent note we are ready to play
+            while (recording.lastPlayed?.next !== undefined && recording.lastPlayed.millis <= now) {
                 noteToPlay = recording.lastPlayed
-                pointsToDraw.push(recording.lastPlayed)
                 recording.lastPlayed = recording.lastPlayed.next;
             }
-            this.vis.connectPoints(pointsToDraw, recording.id);
+            // If we're past the end of the notes, stop the instrument (as it'll loop forever otherwise)
             if (recording.end.millis < now && !recording.activelyRecording) {
                 recording.instrument.stop()
             } else if (noteToPlay !== undefined) {
                 this.playScaled(noteToPlay.x, noteToPlay.y, recording.instrument);
             }
         }
+        const newPoints: { x: number, y: number }[][] = []
+        for (let recording of this.recordings) {
+            const recordingPoints: { x: number, y: number}[] = []
+            let point: Note | undefined = recording.lastPlayed
+            let priorPoint: Note | undefined
+            while (point !== undefined) {
+                // deduplicate points
+                if (point.x !== priorPoint?.x || point.y !== priorPoint?.y) {
+                    recordingPoints.push(point)
+                }
+                priorPoint = point
+                point = point.next
+            }
+            newPoints[recording.id] = recordingPoints
+        }
+        return newPoints
     }
 
     private playScaled(x: number, y: number, instrument: Instrument) {
