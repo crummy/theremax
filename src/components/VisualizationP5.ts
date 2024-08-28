@@ -48,7 +48,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 	p.setup = () => {
 		p.resizeCanvas(element.clientWidth, element.clientHeight);
 		p.fill(200, 200, 200);
-		p.rect(p.width / 2 - 200, p.height / 2 - 40, 400, 80);
+		p.rect(p.width / 2 - 200, p.height / 2 - 40, 400, 80, 10);
 		p.fill(100, 100, 100);
 		p.textAlign(p.CENTER, p.CENTER);
 		p.textSize(32);
@@ -103,12 +103,12 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 			}
 			const padding = 4;
 			if (selectedInstrument === instrument.name) {
-				p.fill(200, 200, 200);
+				p.fill(59, 98, 227);
+				p.noStroke();
 			} else {
+				p.noStroke();
 				p.fill(100, 100, 100);
 			}
-			p.strokeWeight(2);
-			p.stroke(255, 255, 255);
 			p.rect(
 				instrument.x - padding,
 				instrument.y - padding,
