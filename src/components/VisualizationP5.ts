@@ -294,44 +294,8 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 	};
 };
 
-class RippleEffects {
-	readonly maxAgeMs = 200;
-	readonly msBetweenRipples = 16;
-	lastRippleMs: number | undefined;
-	ripples: { x: number; y: number; timestamp: number }[] = [];
-
-	add(x: number, y: number) {
-		const now = Date.now();
-		if (
-			!this.lastRippleMs ||
-			now - this.lastRippleMs >= this.msBetweenRipples
-		) {
-			this.ripples.push({ x, y, timestamp: now });
-			this.lastRippleMs = now;
-		}
-	}
-
-	draw(p: p5) {
-		const now = Date.now();
-		this.ripples = this.ripples.filter(
-			(r) => now - r.timestamp <= this.maxAgeMs,
-		);
-		p.stroke("white");
-		p.noFill();
-		const black = p.color("black");
-		const white = p.color("white");
-		for (const ripple of this.ripples) {
-			const ageMs = now - ripple.timestamp;
-			p.lerpColor(white, black, 1 / (this.maxAgeMs - ageMs));
-			p.circle(ripple.x, ripple.y, ageMs);
-		}
-	}
-}
-
 class SplashEffects {
 	private readonly maxAgeMs = 100;
-	private readonly msBetweenSplashes = 100;
-	private lastSplashMs: number | undefined;
 	private splashes: {
 		x: number;
 		y: number;
@@ -347,14 +311,8 @@ class SplashEffects {
 
 	add(x: number, y: number) {
 		const now = Date.now();
-		if (
-			!this.lastSplashMs ||
-			now - this.lastSplashMs >= this.msBetweenSplashes
-		) {
-			const direction = Math.random() * 2 * Math.PI;
-			this.splashes.push({ x, y, timestamp: now, direction });
-			this.lastSplashMs = now;
-		}
+		const direction = Math.random() * 2 * Math.PI;
+		this.splashes.push({ x, y, timestamp: now, direction });
 	}
 
 	draw(p: p5) {
@@ -366,12 +324,12 @@ class SplashEffects {
 		);
 		this.pg.stroke("white");
 		this.pg.noFill();
-		for (const ripple of this.splashes) {
-			const ageMs = now - ripple.timestamp;
+		for (const splash of this.splashes) {
+			const ageMs = now - splash.timestamp;
 			this.pg.fill("white");
 			this.pg.noStroke();
-			const position = new p5.Vector(ripple.x, ripple.y);
-			const offset = p5.Vector.fromAngle(ripple.direction).mult(ageMs);
+			const position = new p5.Vector(splash.x, splash.y);
+			const offset = p5.Vector.fromAngle(splash.direction).mult(ageMs);
 			const newPosition = position.add(offset);
 			const scale = this.pg.map(ageMs, 0, this.maxAgeMs, 20, 1);
 			this.pg.circle(newPosition.x, newPosition.y, scale);
