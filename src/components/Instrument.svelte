@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {SoundFont} from "./player.ts";
+    import {SoundFont, soundFonts} from "./player.ts";
     import {Theremax} from "./Theremax.ts";
     import p5 from 'p5'
     import {VisualizationP5} from "./VisualizationP5.ts";
@@ -41,6 +41,8 @@
 
         visualization.onReset(reset)
 
+        visualization.onSelectInstrument(inst => instrument = inst)
+
         visualization.onTick(() => {
             if (!isInitialized) {
                 return
@@ -53,53 +55,14 @@
         })
     })
 
-    let soundFonts: string[] = [
-        "acoustic_grand_piano",
-        "alto_sax",
-        "bird_tweet",
-        "breath_noise",
-        "cello",
-        "church_organ",
-        "electric_bass_pick",
-        "flute",
-        "fx_3_crystal",
-        "fx_4_atmosphere",
-        "melodic_tom",
-        "music_box",
-        "seashore",
-        "taiko_drum",
-        "tinkle_bell",
-        "viola",
-        "trombone",
-        "xylophone",
-        "voice_oohs",
-    ]
     let instrument = soundFonts[Math.floor(Math.random() * soundFonts.length)];
 
     function reset() {
-        theremax.reset();
+        theremax?.reset();
     }
 </script>
 
 <style>
-    .selectedInstrument > button {
-        font-weight: bold;
-    }
-
-    #controls {
-        display: flex;
-        width: 100%;
-        padding: 1em;
-        height: 3em;
-    }
-
-    #controls ul {
-        list-style: none;
-        display: flex;
-        overflow-x: scroll;
-        margin: 0;
-    }
-
     #instrument {
         display: flex;
         flex-direction: column;
@@ -126,19 +89,5 @@
 </style>
 
 <div id="instrument">
-    <div id="controls">
-        {#if isInitialized}
-            <button on:click={reset}>Reset</button>
-        {/if}
-        {#if isInitialized}
-            <ul class="instruments">
-                {#each soundFonts as font}
-                    <li class:selectedInstrument={instrument === font}>
-                        <button on:click={() => instrument = font}>{font}</button>
-                    </li>
-                {/each}
-            </ul>
-        {/if}
-    </div>
     <div id="sketch"></div>
 </div>

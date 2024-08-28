@@ -1,4 +1,4 @@
-import {Soundfont, SplendidGrandPiano as Piano, CacheStorage} from "smplr";
+import {CacheStorage, Soundfont, SplendidGrandPiano as Piano} from "smplr";
 
 const storage = new CacheStorage();
 
@@ -105,3 +105,25 @@ export class SoundFont implements Instrument {
         return this.notes.length;
     }
 }
+
+export const soundFonts: string[] = [
+    "acoustic_grand_piano",
+    "alto_sax",
+    "bird_tweet",
+    "breath_noise",
+    "cello",
+    "church_organ",
+    "electric_bass_pick",
+    "flute",
+    "fx_3_crystal",
+    "fx_4_atmosphere",
+    "melodic_tom",
+    "music_box",
+    "seashore",
+    "taiko_drum",
+    "tinkle_bell",
+    "viola",
+    "trombone",
+    "xylophone",
+    "voice_oohs",
+]

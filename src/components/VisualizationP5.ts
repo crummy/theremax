@@ -1,4 +1,5 @@
 import p5 from "p5";
+import {soundFonts} from "./player.ts";
 
 export const screenPadding = 16;
 export const colours = [
@@ -37,16 +38,28 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
     let clickStopListener: (pointerId: number) => void = () => null
     let tickListener: () => void = () => null
     let resetListener: () => void = () => null
+    let selectInstrumentListener: (instrument: string) => void = () => null
     let progress = 0
     let resetIcon: p5.Image
     const resetButton = {x: screenPadding, y: screenPadding, width: 64, height: 64}
+    const instruments = soundFonts.map((sf, i) => ({
+        x: screenPadding,
+        y: screenPadding + 64 * (i + 1),
+        width: 64,
+        height: 64,
+        icon: "🎹",
+        name: sf
+    }))
+    let selectedInstrument: string
 
     p.setup = () => {
         p.resizeCanvas(element.clientWidth, element.clientHeight)
         p.fill(200, 200, 200)
-        p.rect(p.width / 2 - 200, p.height / 2 - 20, 400, 40)
+        p.rect(p.width / 2 - 200, p.height / 2 - 40, 400, 80)
         p.fill(100, 100, 100)
-        p.text("Welcome to the Theremax. Click anywhere to start", p.width / 2, p.height / 2)
+        p.textAlign(p.CENTER, p.CENTER)
+        p.textSize(32)
+        p.text("Welcome to the Theremax.\nClick anywhere to start", p.width / 2, p.height / 2)
     }
 
     p.preload = () => {
@@ -72,6 +85,13 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
             }
         }
         p.image(resetIcon, resetButton.x, resetButton.y, resetButton.width, resetButton.height);
+        p.textSize(32)
+        p.textAlign(p.CENTER)
+        for (let instrument of instruments) {
+            p.text(instrument.icon, instrument.x, instrument.y, instrument.width, instrument.height)
+        }
+        p.textAlign(p.LEFT, p.TOP)
+        p.text(selectedInstrument, screenPadding + resetButton.width, screenPadding + 16)
         p.stroke("white")
         p.line(screenPadding, p.height - screenPadding, (p.width - screenPadding) * progress, p.height - screenPadding)
         tickListener()
@@ -91,6 +111,14 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
         }
         if (didClick(resetButton)) {
             resetListener()
+            return
+        }
+        for (let instrument of instruments) {
+            if (didClick(instrument)) {
+                selectInstrumentListener(instrument.name)
+                selectedInstrument = instrument.name
+                return
+            }
         }
         newClickListener(p.mouseX, p.mouseY, 0)
     }
@@ -151,6 +179,10 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
         resetListener = callback
     }
 
+    function onSelectInstrument(callback: (instrument: string) => void) {
+        selectInstrumentListener = callback
+    }
+
     function updateColumnCount(columns: number) {
         if (columns) {
             // columns.count = columns
@@ -171,6 +203,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
         onClickStop,
         onTick,
         onReset,
+        onSelectInstrument,
         updateColumnCount,
         updateProgress
     }
