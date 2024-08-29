@@ -331,7 +331,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 };
 
 class SplashEffects {
-	private readonly maxAgeMs = 100;
+	private readonly maxAgeMs = 50;
 	private splashes: {
 		x: number;
 		y: number;
@@ -380,6 +380,7 @@ class Grid {
 	private readonly originalPositions: p5.Vector[][] = [];
 	private readonly points: p5.Vector[][] = [];
 	private readonly velocities: p5.Vector[][] = [];
+	private readonly maxVelocity = 1;
 
 	constructor(p: p5) {
 		this.pg = p.createGraphics(p.width, p.height);
@@ -407,7 +408,8 @@ class Grid {
 				const boost = point
 					.copy()
 					.sub(touchPoint)
-					.mult(1 / point.dist(touchPoint));
+					.mult(10 / point.dist(touchPoint))
+					.limit(this.maxVelocity);
 				velocity.add(boost);
 			}
 		}
@@ -426,7 +428,9 @@ class Grid {
 				const toOriginalPosition = originalPosition
 					.copy()
 					.sub(point)
-					.mult(1 / point.dist(originalPosition));
+					.mult(
+						point.dist(originalPosition) * point.dist(originalPosition) * 0.001,
+					);
 				velocity.add(toOriginalPosition);
 				point.add(velocity);
 				velocity.mult(0.8);
@@ -446,10 +450,14 @@ class Grid {
 }
 
 class RippleGrid {
-	private readonly distanceBetweenPoints = 32;
+	private readonly distanceBetweenPoints = 16;
 	private readonly pg: p5.Graphics;
 	private points: p5.Vector[][] = [];
 	private oldPoints: p5.Vector[][] = [];
+	private readonly dampening = 0.9;
+	private readonly circleSize = 2;
+	private lastPoint: p5.Vector | undefined;
+	private distanceBetweenDrops = 64;
 
 	constructor(p: p5) {
 		this.pg = p.createGraphics(p.width, p.height);
@@ -467,11 +475,20 @@ class RippleGrid {
 
 	touched(x: number, y: number) {
 		const touchPoint = new p5.Vector(x, y);
+		if (!this.lastPoint) {
+			this.lastPoint = touchPoint;
+		} else {
+			if (this.lastPoint.dist(touchPoint) < this.distanceBetweenDrops) {
+				return;
+			}
+			this.lastPoint = touchPoint;
+		}
 		for (let j = 0; j < this.points.length; j++) {
 			for (let i = 0; i < this.points[j].length; i++) {
 				const point = this.points[j][i];
 				const distanceToTouch = point.dist(touchPoint);
-				point.z += this.distanceBetweenPoints / distanceToTouch / 2;
+				point.z =
+					(this.distanceBetweenPoints / distanceToTouch / 2) * this.circleSize;
 			}
 		}
 	}
@@ -489,7 +506,10 @@ class RippleGrid {
 				const top = this.points[j + 1]?.[i]?.z ?? 0;
 				const bottom = this.points[j - 1]?.[i]?.z ?? 0;
 				this.oldPoints[j][i].z =
-					((left + right + top + bottom) / 2 - this.oldPoints[j][i].z) * 0.9;
+					(left + right + top + bottom) / 2 - this.oldPoints[j][i].z;
+				this.oldPoints[j][i].z *= this.dampening;
+				this.oldPoints[j][i].z *= p.min(this.dampening, this.circleSize);
+				this.pg.noStroke();
 				this.pg.circle(
 					point.x,
 					point.y,
