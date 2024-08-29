@@ -38,10 +38,18 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 		height: 64,
 		name: sf.name,
 	}));
+	const visButton = {
+		x: screenPadding,
+		y: element.clientHeight - screenPadding - 64,
+		width: 64,
+		height: 64,
+	};
 	let selectedInstrument =
 		soundFonts[Math.floor(Math.random() * soundFonts.length)].name;
+	let selectedVis: "splash" | "ripple" | "grid" = "splash";
 
 	let touchEffects: SplashEffects;
+	let rippleGrid: RippleGrid;
 	let grid: Grid;
 
 	p.setup = () => {
@@ -57,6 +65,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 			p.height / 2,
 		);
 		touchEffects = new SplashEffects(p);
+		rippleGrid = new RippleGrid(p);
 		grid = new Grid(p);
 	};
 
@@ -72,8 +81,13 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 			return;
 		}
 		p.background("black");
-		touchEffects.draw(p);
-		// grid.draw(p);
+		if (selectedVis === "splash") {
+			touchEffects.draw(p);
+		} else if (selectedVis === "ripple") {
+			rippleGrid.draw(p);
+		} else if (selectedVis === "grid") {
+			grid.draw(p);
+		}
 		for (const [recordingId, line] of Object.entries(lines)) {
 			const colour = colours[Number.parseInt(recordingId) % colours.length];
 			const red = (colour >> 16) & 0xff;
@@ -126,6 +140,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 				instrument.height,
 			);
 		}
+		p.text("vis", visButton.x, visButton.y, visButton.width, visButton.height);
 		p.stroke("white");
 		p.line(
 			screenPadding,
@@ -164,6 +179,20 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 				selectedInstrument = instrument.name;
 				return true;
 			}
+		}
+		if (didClick(visButton)) {
+			switch (selectedVis) {
+				case "splash":
+					selectedVis = "ripple";
+					break;
+				case "ripple":
+					selectedVis = "grid";
+					break;
+				case "grid":
+					selectedVis = "splash";
+					break;
+			}
+			return true;
 		}
 	}
 
@@ -211,6 +240,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 			for (const touch of event.changedTouches) {
 				drawListener(touch.clientX, touch.clientY, touch.identifier);
 				touchEffects.add(touch.clientX, touch.clientY);
+				rippleGrid.touched(touch.clientX, touch.clientY);
 				grid.touched(touch.clientX, touch.clientY);
 			}
 		}
@@ -222,6 +252,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 		}
 		drawListener(p.mouseX, p.mouseY, 0);
 		touchEffects.add(p.mouseX, p.mouseY);
+		rippleGrid.touched(p.mouseX, p.mouseY);
 		grid.touched(p.mouseX, p.mouseY);
 	};
 
@@ -410,6 +441,65 @@ class Grid {
 				}
 			}
 		}
+		p.image(this.pg, 0, 0);
+	}
+}
+
+class RippleGrid {
+	private readonly distanceBetweenPoints = 32;
+	private readonly pg: p5.Graphics;
+	private points: p5.Vector[][] = [];
+	private oldPoints: p5.Vector[][] = [];
+
+	constructor(p: p5) {
+		this.pg = p.createGraphics(p.width, p.height);
+		for (let y = 0; y < p.height; y += this.distanceBetweenPoints) {
+			const row: p5.Vector[] = [];
+			const oldRow: p5.Vector[] = [];
+			for (let x = 0; x < p.width; x += this.distanceBetweenPoints) {
+				row.push(new p5.Vector(x, y));
+				oldRow.push(new p5.Vector(0, 0));
+			}
+			this.points.push(row);
+			this.oldPoints.push(oldRow);
+		}
+	}
+
+	touched(x: number, y: number) {
+		const touchPoint = new p5.Vector(x, y);
+		for (let j = 0; j < this.points.length; j++) {
+			for (let i = 0; i < this.points[j].length; i++) {
+				const point = this.points[j][i];
+				const distanceToTouch = point.dist(touchPoint);
+				point.z += this.distanceBetweenPoints / distanceToTouch / 2;
+			}
+		}
+	}
+
+	draw(p: p5) {
+		this.pg.background("black");
+		this.pg.stroke("#444");
+		this.pg.strokeWeight(1);
+		this.pg.fill("white");
+		for (let j = 0; j < this.points.length; j++) {
+			for (let i = 0; i < this.points[j].length; i++) {
+				const point = this.points[j][i];
+				const left = this.points[j][i - 1]?.z ?? 0;
+				const right = this.points[j][i + 1]?.z ?? 0;
+				const top = this.points[j + 1]?.[i]?.z ?? 0;
+				const bottom = this.points[j - 1]?.[i]?.z ?? 0;
+				this.oldPoints[j][i].z =
+					((left + right + top + bottom) / 2 - this.oldPoints[j][i].z) * 0.9;
+				this.pg.circle(
+					point.x,
+					point.y,
+					(this.distanceBetweenPoints / 4) * this.oldPoints[j][i].z,
+				);
+			}
+		}
+		const cache = this.oldPoints;
+		this.oldPoints = this.points;
+		this.points = cache;
 		p.image(this.pg, 0, 0);
 	}
 }
