@@ -73,7 +73,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 		}
 		p.background("black");
 		touchEffects.draw(p);
-		grid.draw(p);
+		// grid.draw(p);
 		for (const [recordingId, line] of Object.entries(lines)) {
 			const colour = colours[Number.parseInt(recordingId) % colours.length];
 			const red = (colour >> 16) & 0xff;
