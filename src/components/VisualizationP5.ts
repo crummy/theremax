@@ -46,11 +46,12 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 	};
 	let selectedInstrument =
 		soundFonts[Math.floor(Math.random() * soundFonts.length)].name;
-	let selectedVis: "splash" | "ripple" | "grid" = "splash";
+	let selectedVis: "splash" | "ripple" | "grid" | "match" = "splash";
 
 	let touchEffects: SplashEffects;
 	let rippleGrid: RippleGrid;
 	let grid: Grid;
+	let match: Match;
 
 	p.setup = () => {
 		p.resizeCanvas(element.clientWidth, element.clientHeight);
@@ -67,6 +68,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 		touchEffects = new SplashEffects(p);
 		rippleGrid = new RippleGrid(p);
 		grid = new Grid(p);
+		match = new Match(p);
 	};
 
 	p.preload = () => {
@@ -87,6 +89,8 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 			rippleGrid.draw(p);
 		} else if (selectedVis === "grid") {
 			grid.draw(p);
+		} else if (selectedVis === "match") {
+			match.draw(p);
 		}
 		for (const [recordingId, line] of Object.entries(lines)) {
 			const colour = colours[Number.parseInt(recordingId) % colours.length];
@@ -189,9 +193,13 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 					selectedVis = "grid";
 					break;
 				case "grid":
+					selectedVis = "match";
+					break;
+				case "match":
 					selectedVis = "splash";
 					break;
 			}
+			console.log(selectedVis);
 			return true;
 		}
 	}
@@ -242,6 +250,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 				touchEffects.add(touch.clientX, touch.clientY);
 				rippleGrid.touched(touch.clientX, touch.clientY);
 				grid.touched(touch.clientX, touch.clientY);
+				match.add(touch.clientX, touch.clientY);
 			}
 		}
 	};
@@ -254,6 +263,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 		touchEffects.add(p.mouseX, p.mouseY);
 		rippleGrid.touched(p.mouseX, p.mouseY);
 		grid.touched(p.mouseX, p.mouseY);
+		match.add(p.mouseX, p.mouseY);
 	};
 
 	function clearLines() {
@@ -520,6 +530,36 @@ class RippleGrid {
 		const cache = this.oldPoints;
 		this.oldPoints = this.points;
 		this.points = cache;
+		p.image(this.pg, 0, 0);
+	}
+}
+
+class Match {
+	private touchedPoint: { x: number; y: number } | undefined;
+	private touchedTime: number | undefined;
+	private readonly pg: p5.Graphics;
+	private readonly maxAgeMs = 200;
+
+	constructor(p: p5) {
+		this.pg = p.createGraphics(p.width, p.height);
+		this.pg.background("black");
+	}
+
+	add(x: number, y: number) {
+		this.touchedTime = Date.now();
+		this.touchedPoint = { x, y };
+	}
+
+	draw(p: p5) {
+		this.pg.background(0, 0, 0, 20);
+		this.pg.noStroke();
+		this.pg.fill("yellow");
+		if (this.touchedTime && this.touchedPoint) {
+			const ageMs = Date.now() - this.touchedTime;
+			if (ageMs < this.maxAgeMs) {
+				this.pg.circle(this.touchedPoint.x, this.touchedPoint.y, 40);
+			}
+		}
 		p.image(this.pg, 0, 0);
 	}
 }
