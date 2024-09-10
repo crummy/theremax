@@ -92,6 +92,7 @@ export const VisualizationP5 = (p: p5, element: HTMLElement) => {
 		} else if (selectedVis === "match") {
 			match.draw(p);
 		}
+
 		for (const [recordingId, line] of Object.entries(lines)) {
 			const colour = colours[Number.parseInt(recordingId) % colours.length];
 			const red = (colour >> 16) & 0xff;
@@ -535,8 +536,11 @@ class RippleGrid {
 }
 
 class Match {
-	private touchedPoint: { x: number; y: number } | undefined;
-	private touchedTime: number | undefined;
+	private points: {
+		x: number;
+		y: number;
+		timestamp: number;
+	}[] = [];
 	private readonly pg: p5.Graphics;
 	private readonly maxAgeMs = 200;
 
@@ -546,19 +550,19 @@ class Match {
 	}
 
 	add(x: number, y: number) {
-		this.touchedTime = Date.now();
-		this.touchedPoint = { x, y };
+		this.points.push({ x, y, timestamp: Date.now() });
 	}
 
 	draw(p: p5) {
-		this.pg.background(0, 0, 0, 20);
+		const now = Date.now();
+		this.pg.background(0, 0, 0);
 		this.pg.noStroke();
 		this.pg.fill("yellow");
-		if (this.touchedTime && this.touchedPoint) {
-			const ageMs = Date.now() - this.touchedTime;
-			if (ageMs < this.maxAgeMs) {
-				this.pg.circle(this.touchedPoint.x, this.touchedPoint.y, 40);
-			}
+		this.points = this.points.filter((r) => now - r.timestamp <= this.maxAgeMs);
+		for (const point of this.points) {
+			const ageMs = now - point.timestamp;
+			const scale = this.pg.map(ageMs, 0, this.maxAgeMs, 40, 1);
+			this.pg.circle(point.x, point.y, scale);
 		}
 		p.image(this.pg, 0, 0);
 	}
